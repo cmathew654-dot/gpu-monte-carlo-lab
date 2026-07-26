@@ -42,8 +42,8 @@ import type { MagnitudeStats, SimParams, SimStats } from '../../store/simStore';
 import { useSimStore } from '../../store/simStore';
 import { runSimulation } from '../runSimulation';
 import type { BootstrapBlocksData } from '../model/bootstrap';
-import { extractMagnitudeStats, extractSimStats } from './cpuReference';
-import { runStatsPassesAndRead, readSuccessRate } from './readback';
+import { readSuccessRate } from './readback';
+import { computeStats } from './computeStats';
 import {
   SWR_MAX_ITERATIONS,
   SWR_PATH_COUNT,
@@ -113,23 +113,13 @@ export async function recomputeStats(
   throwIfAborted(signal);
   onProgress?.('readback', 0, 1);
 
-  const data = await runStatsPassesAndRead(renderer);
-  throwIfAborted(signal);
-  if (data == null || data.totalPaths <= 0) {
-    throw new Error('recomputeStats: stats buffer empty — did runSimulation run?');
-  }
-
-  const stats = extractSimStats(data, { now });
-  onProgress?.('readback', 1, 1);
-
-  // AMENDMENT A3: magnitude-of-failure metrics from the SAME decoded
-  // failure-step histogram (medians commute with the monotone shortfall
-  // transform — no per-path readback needed).
-  const magnitude = extractMagnitudeStats(data, {
-    horizonMonths: Math.round(params.horizonYears * 12),
-    monthlyWithdrawal: params.withdrawal,
+  const { stats, magnitude } = await computeStats(renderer, {
+    params,
+    signal,
     now,
   });
+  onProgress?.('readback', 1, 1);
+
   if (opts.onMagnitudeStats) {
     opts.onMagnitudeStats(magnitude);
   } else {

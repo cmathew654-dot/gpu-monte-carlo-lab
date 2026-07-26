@@ -76,7 +76,8 @@ export function CanvasRoot() {
   //            cross-section, percentile guide lines, ghosts (byte-identical
   //            to viz4)
   const viewMode = useSimStore((s) => s.viewMode);
-  if (!hasWebGPU()) {
+  const mode = useSimStore((s) => s.mode);
+  if (!hasWebGPU() || mode === 'cpu') {
     return <CpuFallback />;
   }
 
@@ -99,7 +100,28 @@ export function CanvasRoot() {
         });
         // Awaited before the first frame (spec §3.7). r185 deprecation of
         // renderAsync() makes this the REQUIRED ordering.
-        await renderer.init();
+        try {
+          await renderer.init();
+        } catch (error) {
+          useSimStore.getState().setMode('cpu');
+          throw error;
+        }
+
+        const device = (
+          renderer as unknown as {
+            backend?: {
+              device?: {
+                lost: Promise<{ reason?: string; message?: string }>;
+              };
+            };
+          }
+        ).backend?.device;
+        if (device) {
+          void device.lost.then((info) => {
+            console.error('[CanvasRoot] WebGPU device lost:', info);
+            useSimStore.getState().setMode('cpu');
+          });
+        }
         return renderer;
       }}
     >

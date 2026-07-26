@@ -24,7 +24,12 @@ import {
   type BootstrapBlocksData,
   type BootstrapBlocksFile,
 } from '../sim/model/bootstrap';
-import { useSimStore, type SimParams } from '../store/simStore';
+import {
+  useSimStore,
+  type SimParams,
+  type TriStats,
+} from '../store/simStore';
+import { secondaryModels } from '../sim/model/triangulation';
 import type {
   CpuSimRequest,
   CpuSimResultMessage,
@@ -175,7 +180,12 @@ export function useCpuSim(): CpuSimStatus {
 
     const runPipeline = async (params: SimParams): Promise<void> => {
       const token = ++tokenRef.current;
-      const { markRecomputing, setStats, setMagnitudeStats } = useSimStore.getState();
+      const {
+        markRecomputing,
+        setStats,
+        setMagnitudeStats,
+        setTriStats,
+      } = useSimStore.getState();
       markRecomputing(true);
       setStatus((s) => ({ ...s, error: null }));
       try {
@@ -185,6 +195,19 @@ export function useCpuSim(): CpuSimStatus {
         // AMENDMENT A3: magnitude-of-failure metrics ride the same message.
         setMagnitudeStats(base.magnitude ?? null);
         setStatus({ elapsedMs: base.elapsedMs, error: null });
+
+        const successRates: TriStats['successRates'] = {
+          gbm: 0,
+          bootstrap: 0,
+          fattail: 0,
+        };
+        successRates[params.model] = base.stats.successRate;
+        for (const model of secondaryModels(params.model)) {
+          const secondary = await runJob({ ...params, model });
+          if (disposed || token !== tokenRef.current) return;
+          successRates[model] = secondary.stats.successRate;
+        }
+        setTriStats({ successRates, computedAt: 0 });
 
         const swr = await searchSafeWithdrawal(params, token);
         if (disposed || token !== tokenRef.current) return;

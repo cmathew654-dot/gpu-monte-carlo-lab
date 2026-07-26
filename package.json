@@ -12,6 +12,7 @@
     "test:stats":"esbuild src/sim/stats/stats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/stats.test.bundle.mjs && node node_modules/.tmp/stats.test.bundle.mjs && esbuild src/sim/stats/snapStats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/snapStats.test.bundle.mjs && node node_modules/.tmp/snapStats.test.bundle.mjs",
     "test:validate": "esbuild src/validation/validate.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/validate.bundle.mjs && node node_modules/.tmp/validate.bundle.mjs",
     "test:probe-launcher": "node probe/launcherPaths.test.mjs",
+    "test:triangulation": "esbuild src/sim/model/triangulation.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/triangulation.test.bundle.mjs && node node_modules/.tmp/triangulation.test.bundle.mjs && esbuild src/store/triStats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/triStats.test.bundle.mjs && node node_modules/.tmp/triStats.test.bundle.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

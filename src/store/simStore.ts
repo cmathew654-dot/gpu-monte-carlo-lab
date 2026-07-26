@@ -73,6 +73,15 @@ export interface MagnitudeStats {
   computedAt: number;
 }
 
+export interface TriStats {
+  successRates: {
+    gbm: number;
+    bootstrap: number;
+    fattail: number;
+  };
+  computedAt: number;
+}
+
 // ---------------------------------------------------------------------------
 // viz2 ADDITION — per-snapshot distribution readback (extended stats).
 // ADDITIVE ONLY: the frozen SimParams/SimStats shapes above are untouched.
@@ -255,6 +264,10 @@ export interface SimState {
   /** Replace the magnitude-of-failure stats after a stats readback (A3). */
   setMagnitudeStats: (stats: MagnitudeStats | null) => void;
 
+  /** A4: success-rate triangulation across all three return models. */
+  triStats: TriStats | null;
+  setTriStats: (stats: TriStats | null) => void;
+
   // --- viz3 extension surface (additive; nothing above changes) ------------
 
   /**
@@ -350,7 +363,12 @@ export const useSimStore = create<SimState>()((set, get) => {
     clearCommitTimer();
     set((state) => {
       const params = normalizeParams({ ...state.params, ...partial }, state.mode);
-      return { params, committedParams: params, isStale: true };
+      return {
+        params,
+        committedParams: params,
+        isStale: true,
+        triStats: null,
+      };
     });
   };
 
@@ -363,6 +381,7 @@ export const useSimStore = create<SimState>()((set, get) => {
       set((state) => ({
         params: normalizeParams({ ...state.params, ...partial }, state.mode),
         isStale: true,
+        triStats: null,
       }));
       scheduleCommit();
     },
@@ -378,6 +397,7 @@ export const useSimStore = create<SimState>()((set, get) => {
           params,
           committedParams: params,
           isStale: params !== state.params ? true : state.isStale,
+          triStats: null,
         };
       }),
 
@@ -416,6 +436,13 @@ export const useSimStore = create<SimState>()((set, get) => {
       set({
         magnitudeStats: magnitudeStats
           ? { ...magnitudeStats, computedAt: Date.now() }
+          : null,
+      }),
+    triStats: null,
+    setTriStats: (triStats) =>
+      set({
+        triStats: triStats
+          ? { ...triStats, computedAt: Date.now() }
           : null,
       }),
     setPreviewMode: (previewMode) =>

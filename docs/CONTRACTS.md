@@ -538,3 +538,8 @@ additive `magnitude` field of the §6 worker result message, wired through
   signature, the A1/A2 snapshot contract (§9), the PCG hash itself, and
   all §2.6 tolerance gates.
 
+
+
+## Amendment A4 (Wave 2)
+
+Model triangulation, store-free secondary stats, failure-magnitude presentation, and device-loss CPU fallback are specified in [AMENDMENT_A4.md](AMENDMENT_A4.md). Frozen shapes and A3 semantics remain unchanged.

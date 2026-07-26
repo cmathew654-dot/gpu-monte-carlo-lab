@@ -21,7 +21,8 @@ import { useEffect, useState } from 'react';
 import { useSimStore } from '../store/simStore';
 import { CapabilityBadge } from './CapabilityBadge';
 import { ParamSlider } from './controls';
-import { fmtUSD } from './format';
+import { fmtUSD, fmtUSDCompact } from './format';
+import { successRateRange } from '../sim/model/triangulation';
 import { loadScenarioPresets, type ScenarioPreset } from './presets';
 
 export function ClientHud() {
@@ -31,6 +32,8 @@ export function ClientHud() {
   const setParams = useSimStore((s) => s.setParams);
   const applyPreset = useSimStore((s) => s.applyPreset);
   const toggleViewMode = useSimStore((s) => s.toggleViewMode);
+  const triStats = useSimStore((s) => s.triStats);
+  const magnitudeStats = useSimStore((s) => s.magnitudeStats);
 
   const [presets, setPresets] = useState<ScenarioPreset[] | null>(null);
   useEffect(() => {
@@ -49,6 +52,9 @@ export function ClientHud() {
     stats !== null && stats.medianFailureYear !== null
       ? Math.round(stats.medianFailureYear)
       : null;
+  const triRange = triStats ? successRateRange(triStats) : null;
+  const successLow = triRange ? Math.round(triRange.min * 100) : successCount;
+  const successHigh = triRange ? Math.round(triRange.max * 100) : successCount;
 
   return (
     <div className="client-hud">
@@ -58,14 +64,21 @@ export function ClientHud() {
             'Listening to a hundred thousand possible futures…'
           ) : (
             <>
-              In <span className="client-hud__number">{successCount}</span> of
-              100 futures, your money outlives you.
+              In <span className="client-hud__number">
+                {successLow}
+                {successHigh !== successLow ? `–${successHigh}` : ''}
+              </span> of 100 futures, your money outlives you.
             </>
           )}
         </p>
         {failureYear !== null && (
           <p className="client-hud__subline">
-            When it fails, it fails around year {failureYear}.
+            When it fails, it fails around year {failureYear}
+            {magnitudeStats?.medianShortfallYears !== null &&
+            magnitudeStats?.medianShortfallYears !== undefined &&
+            magnitudeStats.medianUnfundedObligation !== null
+              ? ` — typically short ${magnitudeStats.medianShortfallYears.toFixed(1)} years and ${fmtUSDCompact(magnitudeStats.medianUnfundedObligation)}.`
+              : '.'}
           </p>
         )}
       </div>

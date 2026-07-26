@@ -51,12 +51,15 @@ import {
 } from '../sim/model/bootstrap';
 import { runSimulation } from '../sim/runSimulation';
 import { recomputeStats } from '../sim/stats/recomputeStats';
+import { computeStats } from '../sim/stats/computeStats';
+import { secondaryModels } from '../sim/model/triangulation';
 import { runSnapHistPassesAndRead } from '../sim/stats/snapReadback';
 import { readHeroPathIndex } from '../sim/stats/heroPath';
 import {
   PREVIEW_PATH_COUNT,
   useSimStore,
   type SimParams,
+  type TriStats,
 } from '../store/simStore';
 import { simRuntime } from './simRuntime';
 
@@ -120,17 +123,25 @@ export function SimDriver() {
         setSnapshotStats,
         setPreviewMode,
         setHeroPathIndex,
+        setMagnitudeStats,
+        setTriStats,
       } = useSimStore.getState();
       markRecomputing(true);
       try {
         await runSimulation({ renderer, params, bootstrapData, signal });
         if (!isCurrent(myToken)) return;
-        const stats = await recomputeStats(renderer, {
-          params,
-          bootstrapData,
-          signal,
-          withSafeWithdrawal,
-        });
+        const stats = withSafeWithdrawal
+          ? await recomputeStats(renderer, {
+              params,
+              bootstrapData,
+              signal,
+              withSafeWithdrawal: true,
+              onMagnitudeStats: setMagnitudeStats,
+            })
+          : await computeStats(renderer, { params, signal }).then((computed) => {
+              setMagnitudeStats(computed.magnitude);
+              return computed.stats;
+            });
         if (!isCurrent(myToken)) return;
         setStats(stats);
         // viz2: per-snapshot distribution readback (12,288 B — histograms,
@@ -161,6 +172,41 @@ export function SimDriver() {
         } catch (heroErr) {
           if (signal.aborted) return;
           console.error('[SimDriver] hero-path readback failed:', heroErr);
+        }
+
+        if (!preview && !withSafeWithdrawal) {
+          const successRates: TriStats['successRates'] = {
+            gbm: 0,
+            bootstrap: 0,
+            fattail: 0,
+          };
+          successRates[params.model] = stats.successRate;
+          for (const model of secondaryModels(params.model)) {
+            const secondaryParams = { ...params, model };
+            await runSimulation({
+              renderer,
+              params: secondaryParams,
+              bootstrapData,
+              signal,
+            });
+            const secondary = await computeStats(renderer, {
+              params: secondaryParams,
+              signal,
+            });
+            if (!isCurrent(myToken)) return;
+            successRates[model] = secondary.stats.successRate;
+          }
+
+          // Secondary runs overwrite shared GPU buffers. Restore the selected
+          // model before publishing the range so the scene remains primary.
+          await runSimulation({
+            renderer,
+            params,
+            bootstrapData,
+            signal,
+          });
+          if (!isCurrent(myToken)) return;
+          setTriStats({ successRates, computedAt: 0 });
         }
       } catch (err) {
         // Superseded work is not an error — the newer run owns the store.

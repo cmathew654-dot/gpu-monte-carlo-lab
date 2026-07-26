@@ -35,15 +35,14 @@ loads $1.5M, $5,500/mo, 35-year horizon, historical-bootstrap engine.
 > Depression, the 1970s, 2008 — replayed in 12-month chunks a hundred thousand
 > times. Watch the number that matters."
 
-**What the client sees:** Probability of success lands at **83.3%**. The cone
-fans wide: median outcome **$6.7M** left at 85, best-decile outcomes reach
-**$68.8M** — but a visible band of embers at the bottom: 1 in 6 futures runs
+**What the client sees:** Probability of success lands at **83.45%**. The cone
+fans wide: median outcome **$6.710M** left at 85, best-decile outcomes reach
+**$68.234M** — but a visible band of embers at the bottom: 1 in 6 futures runs
 out, median failure in **year 22** (client age ~72).
 
 **The move:** press **CALC SAFE WR**. The app binary-searches the sim and
-answers **≈ $4,460/month** (3.6% initial rate). Now drag the withdrawal slider
-from 5,500 toward 4,500 and watch success climb: **90.5%** at $4,464/mo;
-**93.1%** at $4,000/mo. The ember band visibly thins.
+answers **≈ $4,576/month** (3.6% initial rate). Now drag the withdrawal slider
+from 5,500 toward the measured result and watch the current simulation show the ember band thinning.
 
 **The one insight:** *At 4.4% over 35 years, your plan works 5 times out of 6 —
 good odds, but "ran out at 72" is the failure mode. Spending ~$1,000 less per
@@ -65,18 +64,12 @@ to 60% over the working decade.
 > "This is your current plan against a century of real market history. Then
 > we'll poke it."
 
-**What the client sees:** Success **93.6%**, median legacy **$4.7M**,
-worst-decile drawdown **30.4%** during retirement.
+**What the client sees:** Success **95.73%**, median legacy **$2.592M**,
+worst-decile drawdown **90.6%** — the conditional mean of the deepest 10%.
 
 **The moves (two of them):**
-1. *More saving beats more cleverness.* Drag **contribution** $2,500 → $3,500:
-   success rises **93.6% → 95.3%**, median legacy **$4.7M → $5.4M**.
-2. *The honest glidepath talk.* The glidepath knob steers the return models —
-   switch the engine to **GBM** to make it bite. With the 90→60 glidepath:
-   success **95.2%**, median legacy **$1.37M**, worst-decile drawdown **20.2%**.
-   Now set the glidepath flat at 90%: success **95.2%** — *unchanged* — but
-   median legacy **$2.97M** (more than double) at the cost of a rougher ride
-   (worst-decile drawdown **27.2%**).
+1. Raise the contribution and read the newly computed range rather than a memorized point estimate.
+2. Compare the 90→60 glidepath with a flat allocation; the triangulation card separates model disagreement from plan choices.
 
 **The one insight:** *De-risking into retirement didn't change this plan's
 survival odds — it changed what you give up and how bumpy it feels. Keeping
@@ -132,15 +125,13 @@ cone build; don't say anything for a beat.
 > plan. The embers at the bottom are the futures where the money's gone.
 > Tell me when you think it runs out."
 
-**What the client sees:** Success **47.2%** — a literal coin flip. Median
+**What the client sees:** Success **47.05%** — a literal coin flip. Median
 terminal wealth **$0**. Median failure year **15.9** — half the failing
-histories are broke before year 16. Worst-decile drawdown **41.4%**. The cone
+histories are broke before year 16. Worst-decile drawdown **100.0%**. The cone
 is visibly bottom-heavy with embers across the second half of the horizon.
 
-**The move:** press **CALC SAFE WR** → **≈ $3,960/month**. Then drag the
-withdrawal slider from 8,000 down to ~3,950 and watch the success rate climb
-live from 47.2% to **89.7%** — the ember band shrinks to a faint dust, and the
-median line lifts off zero (P50 **$4.6M**).
+**The move:** press **CALC SAFE WR** → **≈ $3,958/month**. Then drag the
+withdrawal slider from 8,000 toward that result and let the current simulation—not a scripted number—show the ember band thinning.
 
 **The one insight:** *At $8,000 you're flipping a coin on running out with a
 third of your retirement still ahead. History's answer for "what would have
@@ -162,16 +153,14 @@ read 100% (you can't "fail" while only saving) — the story is the *spread*.
 > "Same habit, a hundred thousand different market histories. Watch where the
 > money lands — and what changes it."
 
-**What the client sees:** Median outcome **$2.19M**; bad-luck 5th percentile
-still **$648k**; lucky 95th percentile **$7.98M**. The cone is wide and
+**What the client sees:** Median outcome **$2.184M**; bad-luck 5th percentile
+still **$646.6k**; lucky 95th percentile **$7.976M**. The cone is wide and
 entirely above zero.
 
-**The move:** drag **contribution** $1,500 → $3,000: the *entire cone lifts* —
-median **$4.15M**, P5 **$1.25M**, P95 **$14.9M**. Halve it to $750: median
-**$1.20M**. The relationship is almost boringly linear — which IS the point.
+**The move:** change the contribution and read the new distribution directly; the current engine owns every displayed number.
 
 **The one insight:** *Thirty years out, the difference between luck and no
-luck is the difference between $648k and $8M — but the difference between
+luck is the difference between $646.6k and $7.976M — but the difference between
 $750 and $3,000 a month is the difference between $1.2M and $4.2M* at the
 median. *You can't control which market history you live through. You can
 almost completely control the contribution. Time in the market, fed steadily,

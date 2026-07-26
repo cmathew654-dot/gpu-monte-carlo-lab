@@ -81,6 +81,7 @@ npm run test:stats
 npm run test:gauntlet
 npm run test:validate
 npm run test:probe-launcher
+npm run test:triangulation
 npm run build
 node probe/run-viz5-probe.mjs
 ```

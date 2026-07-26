@@ -1072,3 +1072,30 @@ body,
   opacity: 0.45;
   text-align: center;
 }
+
+.model-triangulation {
+  border-block: 1px solid rgba(136, 197, 255, 0.2);
+  padding: 18px 0;
+}
+
+.model-triangulation__range {
+  color: #9fd8ff;
+  font-size: 1.65rem;
+  margin: 5px 0 10px;
+}
+
+.model-triangulation__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: rgba(226, 238, 248, 0.76);
+  font-size: 0.74rem;
+  padding: 3px 0;
+}
+
+.model-triangulation p {
+  color: rgba(226, 238, 248, 0.55);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  margin: 10px 0 0;
+}

@@ -234,3 +234,8 @@ made because the frozen SimDriver integrator wiring is outside A3's
 scope. The frozen SimStats flow remains store-free. Trigger, abort, and
 staleness semantics are identical to §4 (same readback, same commit
 boundary).
+
+
+## Amendment A4 (Wave 2)
+
+Model triangulation, store-free secondary stats, failure-magnitude presentation, and device-loss CPU fallback are specified in [AMENDMENT_A4.md](AMENDMENT_A4.md). Frozen shapes and A3 semantics remain unchanged.
