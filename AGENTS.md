@@ -12,10 +12,11 @@ but never weaken, the frozen contracts in `docs/CONTRACTS.md` and
 Before changing code:
 
 1. Read `PRODUCT.md` for product intent and audience.
-2. Read `MEMORY.md` for current verified state, active decisions, and next work.
-3. Read the applicable nested `AGENTS.md`.
-4. Inspect `git status`; preserve unrelated user changes.
-5. For planned work, use the relevant file under `docs/exec-plans/active/`.
+2. Read `DESIGN.md` before changing any UI, copy hierarchy, or visual token.
+3. Read `MEMORY.md` for current verified state, active decisions, and next work.
+4. Read the applicable nested `AGENTS.md`.
+5. Inspect `git status`; preserve unrelated user changes.
+6. For planned work, use the relevant file under `docs/exec-plans/active/`.
 
 `MEMORY.md` is a mutable handoff, not a source of mandatory rules. Verify stale
 claims against code, contracts, tests, or Git history.

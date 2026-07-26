@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-26T15:20:00.000Z",
+  "title": "Design System: GPU Monte Carlo Lab",
+  "extensions": {
+    "colorMeta": {
+      "stage-black": { "role": "neutral", "displayName": "Stage Black", "canonical": "#000000", "tonalRamp": ["#000000", "#080808", "#171717", "#303030", "#555555", "#858585", "#bfbfbf", "#f2f2f2"] },
+      "control-line": { "role": "neutral", "displayName": "Control Line", "canonical": "#606060", "tonalRamp": ["#111111", "#232323", "#393939", "#535353", "#707070", "#919191", "#b9b9b9", "#ededed"] },
+      "instrument-blue": { "role": "primary", "displayName": "Instrument Blue", "canonical": "#3080ff", "tonalRamp": ["#06162e", "#0b2854", "#123e7e", "#1d58ad", "#3075dc", "#6098ef", "#9fc1fa", "#e6efff"] },
+      "forecast-blue": { "role": "primary", "displayName": "Forecast Blue", "canonical": "#9fd8ff", "tonalRamp": ["#0c202e", "#15384f", "#235674", "#39779b", "#579bc0", "#82bde0", "#b8dfff", "#edf8ff"] },
+      "ember-red": { "role": "secondary", "displayName": "Ember Red", "canonical": "#fb2c36", "tonalRamp": ["#300609", "#590b10", "#841118", "#b61921", "#e22a32", "#f7666d", "#fba3a7", "#ffe8e9"] },
+      "survival-green": { "role": "secondary", "displayName": "Survival Green", "canonical": "#72d6ad", "tonalRamp": ["#0b261d", "#124333", "#1e624b", "#318365", "#4ca580", "#75c69f", "#abe3cb", "#e8f8f1"] },
+      "caution-amber": { "role": "tertiary", "displayName": "Caution Amber", "canonical": "#e1c26e", "tonalRamp": ["#2b2209", "#4b3b10", "#705819", "#967723", "#b79839", "#d2b760", "#e8d59a", "#faf2d9"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Client Display", "purpose": "Calm client outcome sentence only." },
+      "headline": { "displayName": "Advisor Headline", "purpose": "Lens and decision titles." },
+      "body": { "displayName": "Interpretation", "purpose": "Plain-language explanation and methodology." },
+      "data": { "displayName": "Measured Data", "purpose": "Parameters, curves, tables, and capacities." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "state-fast", "value": "160ms cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Hover, focus, and tab-state changes." },
+      { "name": "state-standard", "value": "220ms cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Analytical panel and result-state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "720px" },
+      { "name": "rail-collapse", "value": "1180px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Instrument Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "One explicit high-value action in the current workspace.",
+      "html": "<button class=\"ds-btn-primary\">RUN ROBUSTNESS FRONTIER</button>",
+      "css": ".ds-btn-primary{background:#fff;color:#000;padding:7px 12px;border:1px solid #fff;border-radius:6px;font:600 11px/1.2 'IBM Plex Mono',monospace;letter-spacing:.06em;cursor:pointer;transition:background 160ms cubic-bezier(.22,1,.36,1),color 160ms cubic-bezier(.22,1,.36,1)}.ds-btn-primary:hover{background:#dceaff}.ds-btn-primary:focus-visible{outline:2px solid #3080ff;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Instrument Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet action that preserves the analytical hierarchy.",
+      "html": "<button class=\"ds-btn-secondary\">CANCEL</button>",
+      "css": ".ds-btn-secondary{background:#0a0a0a;color:#fff;padding:7px 12px;border:1px solid #606060;border-radius:6px;font:600 11px/1.2 'IBM Plex Mono',monospace;cursor:pointer;transition:border-color 160ms cubic-bezier(.22,1,.36,1)}.ds-btn-secondary:hover{border-color:#8f8f8f}.ds-btn-secondary:focus-visible{outline:2px solid #3080ff;outline-offset:2px}"
+    },
+    {
+      "name": "Advisor Lens Navigation",
+      "kind": "nav",
+      "description": "Compact analytical tabs with a persistent measured-state indicator.",
+      "html": "<nav class=\"ds-lenses\" aria-label=\"Advisor analysis\"><button aria-selected=\"true\">PLAN</button><button>MODELS</button><button>FRONTIER</button><button>HISTORY</button></nav>",
+      "css": ".ds-lenses{display:flex;gap:2px;border-bottom:1px solid #606060;font:600 10px/1.2 'IBM Plex Mono',monospace}.ds-lenses button{background:transparent;color:#8f8f8f;border:0;border-bottom:2px solid transparent;padding:9px 10px;cursor:pointer}.ds-lenses button[aria-selected='true']{color:#fff;border-bottom-color:#3080ff}.ds-lenses button:focus-visible{outline:2px solid #3080ff;outline-offset:-2px}"
+    },
+    {
+      "name": "Historical Cohort Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A dated stress result that remains legible without color.",
+      "html": "<span class=\"ds-cohort\"><i aria-hidden=\"true\"></i><strong>1966</strong><span>failed · yr 28</span></span>",
+      "css": ".ds-cohort{display:grid;grid-template-columns:auto 1fr;gap:2px 7px;background:#111;color:#fff;border:1px solid #606060;border-radius:4px;padding:7px 8px;font:500 11px/1.3 'IBM Plex Mono',monospace}.ds-cohort i{width:5px;height:5px;margin-top:4px;border-radius:50%;background:#fb2c36}.ds-cohort span{grid-column:2;color:#b8bec8;font-size:9px}"
+    },
+    {
+      "name": "Measured Capacity Readout",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Singular robust-spend decision with its limiting model visible.",
+      "html": "<section class=\"ds-capacity\"><p>ROBUST MONTHLY SPEND</p><strong>$3,477</strong><span>limited by historical bootstrap · 90% target</span></section>",
+      "css": ".ds-capacity{background:#0a0a0a;color:#fff;border:1px solid #606060;border-radius:6px;padding:16px;max-width:320px}.ds-capacity p{margin:0 0 6px;color:#8f8f8f;font:600 10px/1.3 'IBM Plex Mono',monospace;letter-spacing:.08em}.ds-capacity strong{display:block;color:#9fd8ff;font:500 30px/1.1 'IBM Plex Mono',monospace}.ds-capacity span{display:block;margin-top:7px;color:#c4cad2;font:400 13px/1.4 'Barlow Semi Condensed',sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrumented Ascent",
+    "overview": "A field instrument operated at night: the mountain supplies the physical metaphor while every DOM surface behaves like calibrated measurement equipment. Client view is the quiet overlook; advisor view is the survey station.",
+    "keyCharacteristics": [
+      "Near-black stage with rare, state-bearing color.",
+      "Condensed humanist copy paired with truly monospaced data.",
+      "Hairlines and tonal layers instead of ambient card shadows.",
+      "One explicit decision path: solvency to model disagreement to robust spending.",
+      "Accessible tables and sentences are peers of the WebGPU scene."
+    ],
+    "rules": [
+      { "name": "The Evidence Color Rule", "body": "Saturated color must encode model, state, cohort, or interaction.", "section": "colors" },
+      { "name": "The Red Means Failure Rule", "body": "Ember Red is forbidden for emphasis, branding, or hover decoration.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Human interpretation uses Barlow; machine-measured facts use IBM Plex Mono.", "section": "typography" },
+      { "name": "The Survey Glass Rule", "body": "Translucency is allowed only when it preserves spatial context over the mountain.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do lead from the client question to exact advisor evidence without changing the underlying result.",
+      "Do reserve saturated color for state-bearing information.",
+      "Do show every WebGPU fact through semantic DOM evidence too."
+    ],
+    "donts": [
+      "Don't build a generic fintech KPI dashboard of interchangeable cards.",
+      "Don't use trading-terminal cosplay or ornamental neon.",
+      "Don't gamify retirement or turn a stochastic result into a guarantee.",
+      "Don't bury model limitations or failure magnitude behind a polished score.",
+      "Don't use generic AI patterns such as gradient text, excessive rounded cards, or repeated eyebrows."
+    ]
+  }
+}

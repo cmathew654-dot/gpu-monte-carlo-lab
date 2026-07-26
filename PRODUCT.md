@@ -11,6 +11,10 @@ review_trigger: product-thesis, audience, methodology, or ship-bar change
 `PRODUCT.md` is this repository's local product contract. The filename has no
 special Codex behavior; `AGENTS.md` points to it deliberately.
 
+## Register
+
+product
+
 ## One-line product
 
 A WebGPU retirement simulator that turns up to one million possible futures
