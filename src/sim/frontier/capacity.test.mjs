@@ -38,6 +38,8 @@ function outcome(successRate) {
   assert.equal(result.capacity90.target, 0.9);
   assert.equal(result.capacity90.tolerance, 0.005);
   assert.equal(result.capacity90.status, 'converged');
+  assert.equal(result.capacity90.monthlySpending, 5_000);
+  assert.equal(result.capacity90.successRate, 0.9);
   assert.ok(
     result.curve.some(
       (point) => point.monthlySpending === result.capacity90.monthlySpending,
@@ -129,6 +131,45 @@ function outcome(successRate) {
 }
 
 {
+  const controller = new AbortController();
+  const calls = [];
+  await assert.rejects(
+    computeModelCapacity(async (monthlySpending) => {
+      calls.push(monthlySpending);
+      return outcome(1);
+    }, {
+      ...A5_OPTIONS,
+      currentSpending: 100_000,
+      signal: controller.signal,
+      onProgress: (completed) => {
+        if (completed === 2) controller.abort();
+      },
+    }),
+    (error) => error?.name === 'AbortError',
+  );
+  assert.deepEqual(calls, [100_000, 0]);
+}
+
+{
+  const result = await computeModelCapacity(async (monthlySpending) => {
+    if (monthlySpending <= 7_500) return outcome(0.91);
+    return outcome(0.899);
+  }, A5_OPTIONS);
+
+  assert.equal(
+    result.curve.find((point) => point.monthlySpending === 7_500)?.successRate,
+    0.91,
+  );
+  assert.equal(
+    result.curve.find((point) => point.monthlySpending === 8_750)?.successRate,
+    0.899,
+  );
+  assert.equal(result.capacity90.status, 'budget-exhausted');
+  assert.equal(result.capacity90.monthlySpending, 7_500);
+  assert.equal(result.capacity90.successRate, 0.91);
+}
+
+{
   const expected = new Error('runner failed');
   await assert.rejects(
     computeModelCapacity(async () => Promise.reject(expected), A5_OPTIONS),
@@ -148,8 +189,8 @@ function outcome(successRate) {
 
   for (const options of invalidOptions) {
     let calls = 0;
-    await assert.rejects(
-      computeModelCapacity(async () => {
+    assert.throws(
+      () => computeModelCapacity(async () => {
         calls += 1;
         return outcome(1);
       }, options),

@@ -79,7 +79,7 @@ function curveFrom(
     .sort((left, right) => left.monthlySpending - right.monthlySpending);
 }
 
-export async function computeModelCapacity(
+export function computeModelCapacity(
   run: (
     monthlySpending: number,
     signal?: AbortSignal,
@@ -88,18 +88,30 @@ export async function computeModelCapacity(
 ): Promise<ModelCapacityResult> {
   validateOptions(options);
 
+  return computeValidatedModelCapacity(run, options);
+}
+
+async function computeValidatedModelCapacity(
+  run: (
+    monthlySpending: number,
+    signal?: AbortSignal,
+  ) => Promise<FrontierOutcome>,
+  options: ComputeModelCapacityOptions,
+): Promise<ModelCapacityResult> {
+
   const { signal, onProgress } = options;
   const evaluated = new Map<number, FrontierOutcome>();
   let completed = 0;
   const evaluate = async (monthlySpending: number): Promise<FrontierOutcome> => {
+    throwIfAborted(signal);
     const cached = evaluated.get(monthlySpending);
     if (cached) return cached;
-    throwIfAborted(signal);
     const outcome = await run(monthlySpending, signal);
     throwIfAborted(signal);
     evaluated.set(monthlySpending, outcome);
     completed += 1;
     onProgress?.(completed);
+    throwIfAborted(signal);
     return outcome;
   };
   const result = (
@@ -163,7 +175,6 @@ export async function computeModelCapacity(
     const middle = (low + high) / 2;
     const middleOutcome = await evaluate(middle);
     const middleSuccessRate = middleOutcome.stats.successRate;
-    const withinTolerance = Math.abs(middleSuccessRate - options.target) <= options.tolerance;
     if (middleSuccessRate >= options.target) {
       low = middle;
       if (middle > bestSpending) {
@@ -173,7 +184,7 @@ export async function computeModelCapacity(
     } else {
       high = middle;
     }
-    if (withinTolerance) {
+    if (Math.abs(bestSuccessRate - options.target) <= options.tolerance) {
       return result(currentOutcome, {
         monthlySpending: bestSpending,
         successRate: bestSuccessRate,
