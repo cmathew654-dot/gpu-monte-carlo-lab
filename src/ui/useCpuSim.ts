@@ -35,7 +35,12 @@ import {
   type ModelOutcome,
   type ShippedModelKey,
 } from '../sim/frontier/modelComparison';
+import { CPU_FRONTIER_PATH_COUNT } from '../sim/frontier/cpuFrontier';
+import { frontierEvaluationBudgetForThreeModels } from '../sim/frontier/computeFrontier';
+import { FrontierWorkerClient } from '../sim/frontier/frontierWorkerClient';
 import { secondaryModels } from '../sim/model/triangulation';
+import { simRuntime } from '../scene/simRuntime';
+import { useFrontierStore } from '../store/frontierStore';
 import type {
   CpuSimRequest,
   CpuSimResultMessage,
@@ -102,6 +107,13 @@ export function useCpuSim(): CpuSimStatus {
 
     const pending = pendingRef.current;
     let disposed = false;
+    const frontierClient = new FrontierWorkerClient(
+      () =>
+        new Worker(new URL('./frontier.worker.ts', import.meta.url), {
+          type: 'module',
+        }),
+    );
+    let frontierRequestToken = 0;
 
     const worker = new Worker(new URL('./cpuSim.worker.ts', import.meta.url), {
       type: 'module',
@@ -197,7 +209,80 @@ export function useCpuSim(): CpuSimStatus {
       return Math.round(best);
     };
 
+    const requestRobustnessFrontier = () => {
+      if (disposed) return;
+
+      // Keep this reference for stale-result suppression. The worker receives
+      // an independent params copy, but publication belongs to this commit.
+      const captured = useSimStore.getState().committedParams;
+      const requestToken = ++frontierRequestToken;
+      frontierClient.cancel();
+      const isCurrentFrontier = () => {
+        const current = useSimStore.getState();
+        return !disposed
+          && requestToken === frontierRequestToken
+          && current.mode === 'cpu'
+          && current.committedParams === captured;
+      };
+
+      const data = bootstrapRef.current;
+      if (!data) {
+        if (isCurrentFrontier()) {
+          useFrontierStore
+            .getState()
+            .fail('Robustness frontier needs historical bootstrap return data.');
+        }
+        return;
+      }
+
+      const params: SimParams = {
+        ...captured,
+        glidepath: captured.glidepath ? { ...captured.glidepath } : null,
+      };
+      // These request-owned copies are transferred below; never transfer the
+      // bootstrapRef views because normal CPU/triangulation jobs still use them.
+      const bootstrapBlocks = data.blocks.slice().buffer as ArrayBuffer;
+      const bondBlocks = data.bondBlocks
+        ? (data.bondBlocks.slice().buffer as ArrayBuffer)
+        : null;
+      useFrontierStore
+        .getState()
+        .begin(frontierEvaluationBudgetForThreeModels(captured.withdrawal));
+
+      void frontierClient
+        .run(
+          {
+            type: 'compute-frontier',
+            params,
+            analysisPathCount: CPU_FRONTIER_PATH_COUNT,
+            bootstrapBlocks,
+            bondBlocks,
+          },
+          bondBlocks ? [bootstrapBlocks, bondBlocks] : [bootstrapBlocks],
+          (progress) => {
+            if (isCurrentFrontier()) {
+              useFrontierStore.getState().setProgress(progress);
+            }
+          },
+        )
+        .then((result) => {
+          if (isCurrentFrontier()) {
+            useFrontierStore.getState().complete(result);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!isCurrentFrontier()) return;
+          if (error instanceof Error && error.name === 'AbortError') return;
+          useFrontierStore
+            .getState()
+            .fail(error instanceof Error ? error.message : String(error));
+        });
+    };
+    simRuntime.requestRobustnessFrontier = requestRobustnessFrontier;
+
     const runPipeline = async (params: SimParams): Promise<void> => {
+      frontierRequestToken += 1;
+      frontierClient.cancel();
       const token = ++tokenRef.current;
       const {
         markRecomputing,
@@ -263,10 +348,16 @@ export function useCpuSim(): CpuSimStatus {
 
     return () => {
       disposed = true; // in-flight pipeline continuations no-op above
+      frontierRequestToken += 1;
+      frontierClient.cancel();
+      frontierClient.dispose();
       unsubscribe();
       worker.terminate();
       workerRef.current = null;
       pending.clear();
+      if (simRuntime.requestRobustnessFrontier === requestRobustnessFrontier) {
+        simRuntime.requestRobustnessFrontier = null;
+      }
     };
   }, [mode]);
 

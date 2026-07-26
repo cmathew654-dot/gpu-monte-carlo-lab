@@ -353,3 +353,11 @@ assert.match(frontierWorkerSource, /computeCpuFrontier/);
 assert.match(frontierWorkerSource, /frontier-progress/);
 assert.match(frontierWorkerSource, /frontier-result/);
 assert.match(frontierWorkerSource, /frontier-error/);
+
+const cpuRuntimeSource = await readFile(
+  new URL('../../src/ui/useCpuSim.ts', import.meta.url),
+  'utf8',
+);
+assert.match(cpuRuntimeSource, /FrontierWorkerClient/);
+assert.match(cpuRuntimeSource, /requestRobustnessFrontier/);
+assert.match(cpuRuntimeSource, /frontier\.worker\.ts/);

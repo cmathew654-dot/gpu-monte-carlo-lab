@@ -110,8 +110,6 @@ export function SimDriver() {
 
   useEffect(() => {
     if (mode !== 'gpu') {
-      simRuntime.requestSafeWithdrawal = null;
-      simRuntime.requestRobustnessFrontier = null;
       return;
     }
 
