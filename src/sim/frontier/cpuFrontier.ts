@@ -1,18 +1,19 @@
 import type { SimParams } from '../../store/simStore';
+import { runCpuRegimeSim } from '../fallback/cpuRegimeSim';
 import { runCpuSim } from '../fallback/cpuSim';
 import {
   packBondBlocks,
   packBootstrapBlocks,
 } from '../model/bootstrap';
 import { BLOCK_LENGTH } from '../model/returnModels';
+import { REGIME_CALIBRATION_F32 } from '../regime/artifact';
 import { computeRobustnessFrontier } from './computeFrontier';
-import type { FrontierProgress } from './computeFrontier';
+import type { FrontierModelRunner, FrontierProgress } from './computeFrontier';
 import { modelOutcome } from './modelComparison';
-import type { RobustnessFrontier, ShippedModelKey } from './types';
+import { FRONTIER_MODEL_ORDER, toRegimeOutcome } from './modelRegistry';
+import type { RobustnessFrontier } from './types';
 
 export const CPU_FRONTIER_PATH_COUNT = 10_000 as const;
-
-const A5_MODELS: readonly ShippedModelKey[] = ['gbm', 'bootstrap', 'fattail'];
 
 export interface CpuFrontierRequest {
   type: 'compute-frontier';
@@ -78,29 +79,39 @@ export async function computeCpuFrontier(
     throw new Error('Bond bootstrap blocks are required when a glidepath is active');
   }
 
-  const runners = A5_MODELS.map((model) => ({
-    model,
-    run: async (monthlySpending: number) => {
-      const simulation = runCpuSim(
-        {
+  const runners: FrontierModelRunner[] = FRONTIER_MODEL_ORDER.map(
+    (model) => ({
+      model,
+      run: async (monthlySpending: number) => {
+        const analysisParams: SimParams = {
           ...captured,
-          model,
+          ...(model === 'regime' ? null : { model }),
           withdrawal: monthlySpending,
           pathCount: CPU_FRONTIER_PATH_COUNT,
           seed: captured.seed,
-        },
-        {
+        };
+
+        if (model === 'regime') {
+          const simulation = runCpuRegimeSim(
+            analysisParams,
+            REGIME_CALIBRATION_F32,
+            { now },
+          );
+          return toRegimeOutcome(simulation);
+        }
+
+        const simulation = runCpuSim(analysisParams, {
           bootstrapData: model === 'bootstrap' ? bootstrapData : null,
           bondBlocks: model === 'bootstrap' ? bondBlocks : null,
           now,
-        },
-      );
-      return modelOutcome(model, {
-        stats: simulation.stats,
-        magnitude: simulation.magnitude,
-      });
-    },
-  }));
+        });
+        return modelOutcome(model, {
+          stats: simulation.stats,
+          magnitude: simulation.magnitude,
+        });
+      },
+    }),
+  );
 
   return computeRobustnessFrontier(runners, {
     params: captured,

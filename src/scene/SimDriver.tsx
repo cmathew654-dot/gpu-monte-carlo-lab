@@ -63,7 +63,7 @@ import {
   type ShippedModelKey,
 } from '../sim/frontier/modelComparison';
 import {
-  frontierEvaluationBudgetForThreeModels,
+  frontierEvaluationBudget,
 } from '../sim/frontier/computeFrontier';
 import { runGpuRobustnessFrontier } from '../sim/frontier/gpuFrontier';
 import { runSnapHistPassesAndRead } from '../sim/stats/snapReadback';
@@ -274,7 +274,7 @@ export function SimDriver() {
       const { signal } = work;
       const frontierStore = useFrontierStore.getState();
       frontierStore.begin(
-        frontierEvaluationBudgetForThreeModels(captured.withdrawal),
+        frontierEvaluationBudget(captured.withdrawal),
       );
       void (async () => {
         const isCurrentFrontier = () => {
@@ -296,6 +296,7 @@ export function SimDriver() {
 
           const result = await runGpuRobustnessFrontier(
             {
+              renderer,
               runSimulation: async (params, runSignal) => {
                 await runSimulation({
                   renderer,

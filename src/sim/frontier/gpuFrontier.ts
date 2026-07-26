@@ -1,3 +1,6 @@
+import type { WebGPURenderer } from 'three/webgpu';
+import { runRegimeSimulation as runRegimeSimulationDriver } from '../runRegimeSimulation';
+import { computeStats } from '../stats/computeStats';
 import {
   computeRobustnessFrontier,
   type ComputeRobustnessFrontierOptions,
@@ -6,21 +9,30 @@ import {
 } from './computeFrontier';
 import type {
   ModelOutcome,
+  RegimeOutcome,
   RobustnessFrontier,
-  ShippedModelKey,
 } from './types';
+import { FRONTIER_MODEL_ORDER, toRegimeOutcome } from './modelRegistry';
 
 type SimParams = ComputeRobustnessFrontierOptions['params'];
 
 const ANALYSIS_PATH_COUNT = 100_000 as const;
-const A5_MODELS: readonly ShippedModelKey[] = ['gbm', 'bootstrap', 'fattail'];
 
 export interface GpuFrontierDependencies {
+  renderer?: WebGPURenderer;
   runSimulation: (params: SimParams, signal?: AbortSignal) => Promise<void>;
   readOutcome: (
     params: SimParams,
     signal?: AbortSignal,
   ) => Promise<ModelOutcome>;
+  runRegimeSimulation?: (
+    params: SimParams,
+    signal?: AbortSignal,
+  ) => Promise<void>;
+  readRegimeOutcome?: (
+    params: SimParams,
+    signal?: AbortSignal,
+  ) => Promise<RegimeOutcome>;
   now?: () => number;
 }
 
@@ -75,26 +87,68 @@ export async function runGpuRobustnessFrontier(
     await dependencies.runSimulation(captured);
   };
 
-  const runners: FrontierModelRunner[] = A5_MODELS.map((model) => ({
-    model,
-    run: async (monthlySpending, signal) => {
-      const analysisParams: SimParams = {
-        ...captured,
-        model,
-        withdrawal: monthlySpending,
-        pathCount: ANALYSIS_PATH_COUNT,
-        seed: captured.seed,
-      };
-      await awaitWithAbortPriority(
-        dependencies.runSimulation(analysisParams, signal),
+  const runRegimeCandidate = dependencies.runRegimeSimulation
+    ?? (async (params: SimParams, signal?: AbortSignal): Promise<void> => {
+      if (!dependencies.renderer) {
+        throw new Error(
+          'GPU regime frontier requires a renderer or injected regime runner',
+        );
+      }
+      await runRegimeSimulationDriver({
+        renderer: dependencies.renderer,
+        params,
         signal,
-      );
-      return awaitWithAbortPriority(
-        dependencies.readOutcome(analysisParams, signal),
+      });
+    });
+  const readRegimeCandidate = dependencies.readRegimeOutcome
+    ?? (async (params: SimParams, signal?: AbortSignal): Promise<RegimeOutcome> => {
+      if (!dependencies.renderer) {
+        throw new Error(
+          'GPU regime frontier requires a renderer or injected regime outcome reader',
+        );
+      }
+      const computed = await computeStats(dependencies.renderer, {
+        params,
         signal,
-      );
-    },
-  }));
+        now: dependencies.now,
+      });
+      return toRegimeOutcome(computed);
+    });
+
+  const runners: FrontierModelRunner[] = FRONTIER_MODEL_ORDER.map(
+    (model) => ({
+      model,
+      run: async (monthlySpending, signal) => {
+        const analysisParams: SimParams = {
+          ...captured,
+          ...(model === 'regime' ? null : { model }),
+          withdrawal: monthlySpending,
+          pathCount: ANALYSIS_PATH_COUNT,
+          seed: captured.seed,
+        };
+
+        if (model === 'regime') {
+          await awaitWithAbortPriority(
+            runRegimeCandidate(analysisParams, signal),
+            signal,
+          );
+          return awaitWithAbortPriority(
+            readRegimeCandidate(analysisParams, signal),
+            signal,
+          );
+        }
+
+        await awaitWithAbortPriority(
+          dependencies.runSimulation(analysisParams, signal),
+          signal,
+        );
+        return awaitWithAbortPriority(
+          dependencies.readOutcome(analysisParams, signal),
+          signal,
+        );
+      },
+    }),
+  );
 
   let frontier: RobustnessFrontier;
   try {

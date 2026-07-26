@@ -3,44 +3,46 @@ import {
   capacityEvaluationBudget,
   computeModelCapacity,
 } from './capacity';
+import { FRONTIER_MODEL_ORDER } from './modelRegistry';
 import type {
   CapacityStatus,
-  ModelOutcome,
+  FrontierModelKey,
+  FrontierOutcome,
   RobustnessFrontier,
-  ShippedModelKey,
   SpendingCurvePoint,
 } from './types';
 
-const A5_MODELS = ['gbm', 'bootstrap', 'fattail'] as const;
-
-const A5_CAPACITY_OPTIONS = {
+const FRONTIER_CAPACITY_OPTIONS = {
   target: 0.9,
   tolerance: 0.005,
   maxBisections: 8,
   maxMonthlySpending: 100_000,
 } as const;
 
-export function frontierEvaluationBudgetForThreeModels(
+export function frontierEvaluationBudget(
   currentSpending: number,
 ): number {
   return capacityEvaluationBudget({
     currentSpending,
-    ...A5_CAPACITY_OPTIONS,
-  }) * A5_MODELS.length;
+    ...FRONTIER_CAPACITY_OPTIONS,
+  }) * FRONTIER_MODEL_ORDER.length;
 }
 
+/** @deprecated Compatibility alias; the budget now covers every frontier model. */
+export const frontierEvaluationBudgetForThreeModels = frontierEvaluationBudget;
+
 export interface FrontierModelRunner {
-  model: ShippedModelKey;
+  model: FrontierModelKey;
   run: (
     monthlySpending: number,
     signal?: AbortSignal,
-  ) => Promise<ModelOutcome>;
+  ) => Promise<FrontierOutcome>;
 }
 
 export interface FrontierProgress {
   completed: number;
   total: number;
-  model: ShippedModelKey | null;
+  model: FrontierModelKey | null;
 }
 
 export interface ComputeRobustnessFrontierOptions {
@@ -60,12 +62,12 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   throw error;
 }
 
-function assertA5RunnerOrder(runners: readonly FrontierModelRunner[]): void {
+function assertFrontierRunnerOrder(runners: readonly FrontierModelRunner[]): void {
   if (
-    runners.length !== A5_MODELS.length
-    || runners.some((runner, index) => runner.model !== A5_MODELS[index])
+    runners.length !== FRONTIER_MODEL_ORDER.length
+    || runners.some((runner, index) => runner.model !== FRONTIER_MODEL_ORDER[index])
   ) {
-    throw new Error('computeRobustnessFrontier requires exact A5 model order');
+    throw new Error('computeRobustnessFrontier requires exact frontier model order');
   }
 }
 
@@ -128,7 +130,7 @@ export async function computeRobustnessFrontier(
   runners: readonly FrontierModelRunner[],
   options: ComputeRobustnessFrontierOptions,
 ): Promise<RobustnessFrontier> {
-  assertA5RunnerOrder(runners);
+  assertFrontierRunnerOrder(runners);
   throwIfAborted(options.signal);
 
   const capturedParams: SimParams = {
@@ -139,9 +141,9 @@ export async function computeRobustnessFrontier(
   };
   const perModelTotal = capacityEvaluationBudget({
     currentSpending: capturedParams.withdrawal,
-    ...A5_CAPACITY_OPTIONS,
+    ...FRONTIER_CAPACITY_OPTIONS,
   });
-  const total = frontierEvaluationBudgetForThreeModels(
+  const total = frontierEvaluationBudget(
     capturedParams.withdrawal,
   );
   const models: RobustnessFrontier['models'][number][] = [];
@@ -150,7 +152,7 @@ export async function computeRobustnessFrontier(
     const offset = index * perModelTotal;
     const modelResult = await computeModelCapacity(runner.run, {
       currentSpending: capturedParams.withdrawal,
-      ...A5_CAPACITY_OPTIONS,
+      ...FRONTIER_CAPACITY_OPTIONS,
       signal: options.signal,
       onProgress: (completed) => {
         options.onProgress?.({

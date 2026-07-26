@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import {
   assertMonotoneCurve,
   computeRobustnessFrontier,
+  frontierEvaluationBudget,
   frontierEvaluationBudgetForThreeModels,
 } from './computeFrontier.ts';
 import { capacityEvaluationBudget } from './capacity.ts';
+import { FRONTIER_MODEL_ORDER } from './modelRegistry.ts';
 
 const capturedParams = {
   initial: 750_000,
@@ -45,6 +47,14 @@ function thresholdRunner(model, threshold, events) {
   };
 }
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 function capacityBudget(withdrawal) {
   return capacityEvaluationBudget({
     currentSpending: withdrawal,
@@ -53,9 +63,16 @@ function capacityBudget(withdrawal) {
   });
 }
 
-assert.equal(frontierEvaluationBudgetForThreeModels(0), 54);
-assert.equal(frontierEvaluationBudgetForThreeModels(5_000), 45);
-assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
+assert.deepEqual(FRONTIER_MODEL_ORDER, [
+  'gbm',
+  'bootstrap',
+  'fattail',
+  'regime',
+]);
+assert.equal(frontierEvaluationBudget(0), 72);
+assert.equal(frontierEvaluationBudget(5_000), 60);
+assert.equal(frontierEvaluationBudget(100_000), 44);
+assert.equal(frontierEvaluationBudgetForThreeModels(5_000), frontierEvaluationBudget(5_000));
 
 {
   const events = [];
@@ -64,6 +81,7 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
     thresholdRunner('gbm', 6_000, events),
     thresholdRunner('bootstrap', 5_500, events),
     thresholdRunner('fattail', 5_750, events),
+    thresholdRunner('regime', 4_750, events),
   ];
   const result = await computeRobustnessFrontier(runners, {
     ...options,
@@ -75,11 +93,13 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
     'gbm',
     'bootstrap',
     'fattail',
+    'regime',
   ]);
   assert.deepEqual(events.filter((event) => event.startsWith('start:')), [
     'start:gbm',
     'start:bootstrap',
     'start:fattail',
+    'start:regime',
   ]);
   assert.equal(result.basis.analysisPathCount, 10_000);
   assert.equal(result.basis.engine, 'cpu');
@@ -97,10 +117,10 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
     result,
   );
   assert.ok(progress.length > 0);
-  assert.ok(progress.every(({ total }) => total === capacityBudget(5_000) * 3));
+  assert.ok(progress.every(({ total }) => total === capacityBudget(5_000) * 4));
   assert.deepEqual(
     [...new Set(progress.map(({ model }) => model))],
-    ['gbm', 'bootstrap', 'fattail'],
+    ['gbm', 'bootstrap', 'fattail', 'regime'],
   );
 }
 
@@ -125,6 +145,7 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
     delayedRunner('gbm', 6_000),
     delayedRunner('bootstrap', 5_500),
     delayedRunner('fattail', 5_750),
+    delayedRunner('regime', 4_750),
   ], options);
 
   assert.equal(peakActive, 1);
@@ -134,12 +155,52 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
   assert.ok(
     events.lastIndexOf('end:bootstrap') < events.indexOf('start:fattail'),
   );
+  assert.ok(
+    events.lastIndexOf('end:fattail') < events.indexOf('start:regime'),
+  );
   assert.deepEqual(
     [...new Set(events.filter((event) => event.startsWith('start:')).map(
       (event) => event.slice('start:'.length),
     ))],
-    ['gbm', 'bootstrap', 'fattail'],
+    ['gbm', 'bootstrap', 'fattail', 'regime'],
   );
+}
+
+{
+  const events = [];
+  const regimeStarted = deferred();
+  const releaseRegime = deferred();
+  let settled = false;
+  let regimeCalls = 0;
+  const operation = computeRobustnessFrontier([
+    thresholdRunner('gbm', 6_000, events),
+    thresholdRunner('bootstrap', 5_500, events),
+    thresholdRunner('fattail', 5_750, events),
+    {
+      model: 'regime',
+      run: async (monthlySpending) => {
+        if (regimeCalls === 0) {
+          events.push('start:regime');
+          regimeStarted.resolve();
+          await releaseRegime.promise;
+        }
+        regimeCalls += 1;
+        return outcome('regime', monthlySpending <= 4_750 ? 0.91 : 0.89);
+      },
+    },
+  ], options).then((result) => {
+    settled = true;
+    return result;
+  });
+
+  await regimeStarted.promise;
+  await Promise.resolve();
+  assert.equal(settled, false, 'nothing publishes after only three models');
+  assert.deepEqual(events, [
+    'start:gbm', 'start:bootstrap', 'start:fattail', 'start:regime',
+  ]);
+  releaseRegime.resolve();
+  assert.equal((await operation).models.length, 4);
 }
 
 {
@@ -149,8 +210,9 @@ assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
       { model: 'bootstrap', run: async () => { runs += 1; return outcome('bootstrap', 1); } },
       { model: 'gbm', run: async () => { runs += 1; return outcome('gbm', 1); } },
       { model: 'fattail', run: async () => { runs += 1; return outcome('fattail', 1); } },
+      { model: 'regime', run: async () => { runs += 1; return outcome('regime', 1); } },
     ], options),
-    /exact A5 model order/i,
+    /exact frontier model order/i,
   );
   assert.equal(runs, 0);
 }
@@ -176,6 +238,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
       { model: 'gbm', run: async () => { events.push('start:gbm'); throw expected; } },
       { model: 'bootstrap', run: async () => { events.push('start:bootstrap'); return outcome('bootstrap', 1); } },
       { model: 'fattail', run: async () => { events.push('start:fattail'); return outcome('fattail', 1); } },
+      { model: 'regime', run: async () => { events.push('start:regime'); return outcome('regime', 1); } },
     ], options),
     (error) => error === expected,
   );
@@ -189,6 +252,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
       { model: 'gbm', run: async () => { events.push('start:gbm'); return outcome('bootstrap', 0.89); } },
       { model: 'bootstrap', run: async () => { events.push('start:bootstrap'); return outcome('bootstrap', 1); } },
       { model: 'fattail', run: async () => { events.push('start:fattail'); return outcome('fattail', 1); } },
+      { model: 'regime', run: async () => { events.push('start:regime'); return outcome('regime', 1); } },
     ], options),
     /gbm.*bootstrap/i,
   );
@@ -203,6 +267,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
       { model: 'gbm', run: async () => { events.push('start:gbm'); controller.abort(); return outcome('gbm', 1); } },
       { model: 'bootstrap', run: async () => { events.push('start:bootstrap'); return outcome('bootstrap', 1); } },
       { model: 'fattail', run: async () => { events.push('start:fattail'); return outcome('fattail', 1); } },
+      { model: 'regime', run: async () => { events.push('start:regime'); return outcome('regime', 1); } },
     ], { ...options, signal: controller.signal }),
     (error) => error?.name === 'AbortError',
   );
@@ -218,6 +283,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
         { model: 'gbm', run: async () => outcome('gbm', 0.89) },
         { model: 'bootstrap', run: async () => outcome('bootstrap', 0.89) },
         { model: 'fattail', run: async () => outcome('fattail', 0.89) },
+        { model: 'regime', run: async () => outcome('regime', 0.89) },
       ], {
         ...options,
         signal: controller.signal,
@@ -238,6 +304,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
     { model: 'gbm', run: async () => outcome('gbm', 1) },
     { model: 'bootstrap', run: async () => outcome('bootstrap', 1) },
     { model: 'fattail', run: async () => outcome('fattail', 1) },
+    { model: 'regime', run: async () => outcome('regime', 1) },
   ], options);
   assert.equal(result.robustSpend, null);
   assert.equal(result.robustStatus, 'unbounded-high');
@@ -250,13 +317,14 @@ assert.doesNotThrow(() => assertMonotoneCurve([
     thresholdRunner('gbm', 0, []),
     thresholdRunner('bootstrap', 0, []),
     thresholdRunner('fattail', 0, []),
+    thresholdRunner('regime', 0, []),
   ], {
     ...options,
     params: { ...capturedParams, withdrawal },
     onProgress: (update) => progress.push(update),
   });
 
-  const expectedTotal = capacityBudget(withdrawal) * 3;
+  const expectedTotal = capacityBudget(withdrawal) * 4;
   assert.ok(progress.every(({ total }) => total === expectedTotal));
   assert.ok(progress.every(({ completed }) => completed <= expectedTotal));
   assert.ok(progress.every(
@@ -264,7 +332,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
   ));
   assert.deepEqual(
     [...new Set(progress.map(({ model }) => model))],
-    ['gbm', 'bootstrap', 'fattail'],
+    ['gbm', 'bootstrap', 'fattail', 'regime'],
   );
   const firstBootstrap = progress.find(({ model }) => model === 'bootstrap');
   const lastGbm = [...progress].reverse().find(({ model }) => model === 'gbm');
@@ -276,6 +344,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
     { model: 'gbm', run: async () => outcome('gbm', 0.89) },
     { model: 'bootstrap', run: async () => outcome('bootstrap', 1) },
     { model: 'fattail', run: async () => outcome('fattail', 1) },
+    { model: 'regime', run: async () => outcome('regime', 1) },
   ], options);
   assert.equal(result.robustSpend, null);
   assert.equal(result.robustStatus, 'infeasible-at-zero');
@@ -298,10 +367,15 @@ assert.doesNotThrow(() => assertMonotoneCurve([
         monthlySpending <= 7_000 ? 0.91 : 0.89,
       ),
     },
+    thresholdRunner('regime', 4_500, []),
   ], options);
   assert.equal(result.models[0].capacity90.status, 'unbounded-high');
-  assert.equal(result.robustSpend, 5_000);
-  assert.equal(result.robustStatus, 'converged');
+  assert.equal(
+    result.robustSpend,
+    result.models.find(({ model }) => model === 'regime').capacity90.monthlySpending,
+  );
+  assert.ok(result.robustSpend < 5_000);
+  assert.equal(result.robustStatus, 'budget-exhausted');
 }
 
 {
@@ -309,6 +383,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
     thresholdRunner('gbm', 5_001, []),
     thresholdRunner('bootstrap', 6_000, []),
     thresholdRunner('fattail', 7_000, []),
+    { model: 'regime', run: async () => outcome('regime', 1) },
   ], options);
   assert.equal(result.models[0].capacity90.status, 'budget-exhausted');
   assert.equal(result.robustSpend, result.models[0].capacity90.monthlySpending);
@@ -326,6 +401,7 @@ assert.doesNotThrow(() => assertMonotoneCurve([
       ),
     },
     { model: 'fattail', run: async () => outcome('fattail', 1) },
+    { model: 'regime', run: async () => outcome('regime', 1) },
   ], options);
   assert.equal(result.models[0].capacity90.status, 'budget-exhausted');
   assert.equal(result.models[1].capacity90.status, 'converged');

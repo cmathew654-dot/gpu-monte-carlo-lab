@@ -9,6 +9,7 @@ import {
   computeCpuFrontier,
   CPU_FRONTIER_PATH_COUNT,
 } from './cpuFrontier.ts';
+import { toRegimeOutcome } from './modelRegistry.ts';
 
 const FIXED_NOW = 123_456;
 
@@ -58,7 +59,33 @@ function assertFiniteTree(value, path = 'result') {
   }
 }
 
-test('computeCpuFrontier forces the A5 CPU basis, clones inputs, and returns summaries only', async () => {
+test('toRegimeOutcome strips runtime-only fields and adds calibration metadata', () => {
+  const outcome = toRegimeOutcome({
+    stats: {
+      successRate: 0.91,
+      percentiles: { p5: 1, p25: 2, p50: 3, p75: 4, p95: 5 },
+      worstDecileMaxDD: 0.4,
+      safeWithdrawalRate: 999,
+      medianFailureYear: null,
+      computedAt: 111,
+    },
+    magnitude: {
+      medianShortfallYears: null,
+      medianUnfundedObligation: null,
+      failedPaths: 0,
+      computedAt: 222,
+    },
+  });
+
+  assert.equal(outcome.model, 'regime');
+  assert.equal(outcome.initialization, 'latest-filtered');
+  assert.equal(outcome.calibrationAsOf, '2026-06');
+  assert.equal('safeWithdrawalRate' in outcome.stats, false);
+  assert.equal('computedAt' in outcome.stats, false);
+  assert.equal('computedAt' in outcome.magnitude, false);
+});
+
+test('computeCpuFrontier forces the four-model CPU basis, clones inputs, and returns summaries only', async () => {
   const request = makeRequest();
   const expectedParams = structuredClone(request.params);
   const progress = [];
@@ -79,6 +106,7 @@ test('computeCpuFrontier forces the A5 CPU basis, clones inputs, and returns sum
     'gbm',
     'bootstrap',
     'fattail',
+    'regime',
   ]);
   assert.deepEqual(result.basis, {
     params: expectedParams,
@@ -89,6 +117,13 @@ test('computeCpuFrontier forces the A5 CPU basis, clones inputs, and returns sum
   assert.equal(result.computedAt, FIXED_NOW);
   assert.ok(nowCalls > 1, 'the injected clock must reach CPU runs and frontier assembly');
   assert.ok(progress.length > 0, 'frontier progress should be forwarded');
+  const regime = result.models.find(({ model }) => model === 'regime');
+  assert.ok(regime, 'regime model outcome must be present');
+  assert.equal(regime.outcome.initialization, 'latest-filtered');
+  assert.equal(regime.outcome.calibrationAsOf, '2026-06');
+  assert.equal('safeWithdrawalRate' in regime.outcome.stats, false);
+  assert.equal('computedAt' in regime.outcome.stats, false);
+  assert.equal('computedAt' in regime.outcome.magnitude, false);
   assertFiniteTree(result);
 });
 
@@ -133,7 +168,7 @@ test('computeCpuFrontier rejects truncated paired bonds before starting any run'
   assert.equal(nowCalls, 0);
 });
 
-test('computeCpuFrontier rejects malformed equity and non-A5 path counts before runs', async (t) => {
+test('computeCpuFrontier rejects malformed equity and unsupported path counts before runs', async (t) => {
   await t.test('equity buffer', async () => {
     const request = makeRequest();
     request.bootstrapBlocks = new Float32Array(11).buffer;
