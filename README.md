@@ -8,7 +8,7 @@ sentence. The advisor can then interrogate the same plan across model
 assumptions, historical retirement dates, failure severity, and a tested
 spending frontier.
 
-> 🎥 Live demo + GIF: link added on publish
+> 🎥 **Live demo:** [gpu-monte-carlo-lab.netlify.app](https://gpu-monte-carlo-lab.netlify.app)
 
 ## The 60-second read
 

@@ -556,3 +556,14 @@ readable, all four direct-label lanes are distinct, the client robust-spend
 sentence does not overlap the Gauntlet, and the idle state says four-model.
 SwiftShader still cannot verify the WebGPU terrain scene or physical-device
 performance; those limitations remain unchanged.
+
+### Production deployment
+
+The validated static bundle was deployed to
+[gpu-monte-carlo-lab.netlify.app](https://gpu-monte-carlo-lab.netlify.app) as
+Netlify deployment `6a664cf926780901772552c0`. The hosting API reports state
+`ready`, published 2026-07-26T18:07:57.597Z. Only the built `dist` contents
+were uploaded: one generated page and seven assets; source, tests, and internal
+planning documents were excluded. A fresh HTTPS request returned status 200,
+content type `text/html; charset=UTF-8`, 1,011 bytes, the expected application
+root, and the release asset `index-CXDfHSRG.js`.

@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:61a0c0f + final documentation
+verified_against: git:fe2b92f + production deploy 6a664cf926780901772552c0
 review_by: 2026-08-09
 ---
 
@@ -112,7 +112,7 @@ Mutable operational handoff only.
 
 ### C-006 — Amendment A6: Regime-t and four-model Robustness Frontier
 
-- Status: completed; canonical integration and deployment pending.
+- Status: completed, integrated into canonical `master`, and deployed.
 - Outcome sought: extend the tested spending frontier with one orthogonal,
   CFA-defensible persistence lens without changing any frozen primary model,
   model ID, buffer, worker protocol, store shape, or financial operation order.
@@ -142,8 +142,13 @@ Mutable operational handoff only.
 - Verified outcome: the complete release-candidate gate in
   `validation/REPORT.md` passed after `61a0c0f`. The exact frozen-surface diff
   from A5 head `2bade36` is empty.
-- Next action: fast-forward canonical `master`, publish the validated static
-  bundle, insert the production URL in README, and record the deployed commit.
+- Production: [gpu-monte-carlo-lab.netlify.app](https://gpu-monte-carlo-lab.netlify.app),
+  Netlify deployment `6a664cf926780901772552c0`, state `ready`. The host
+  received only the validated `dist` contents, not the source tree or internal
+  planning documents. Independent HTTPS verification returned 200 and the
+  expected `index-CXDfHSRG.js` asset reference.
+- Next action: run the documented physical-GPU performance/parity protocol and
+  add a captured demo GIF when suitable hardware is available.
 
 ## Verified imported state
 
@@ -230,10 +235,10 @@ Full rationale: `docs/DECISIONS.md`.
 
 ## Future — not committed
 
-1. Run Wave 3: promote the shipped triangulation, failure-magnitude, and
-   historical-gauntlet layers into README feature sections.
-2. Deploy the verified static build and replace the live URL/GIF placeholder.
-3. Measure real-hardware WebGPU performance before publishing frame-time claims.
+1. Measure real-hardware WebGPU performance before publishing frame-time claims.
+2. Capture a production demo GIF on suitable GPU hardware.
+3. Broaden the historical evidence beyond US-only data before claiming
+   geographic robustness.
 
 The stretch goal to code-split GPU buffers in CPU mode remains optional; skip it
 if it makes frozen buffer initialization or Canvas ownership invasive.
