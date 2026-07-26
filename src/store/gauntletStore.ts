@@ -26,7 +26,7 @@ export interface GauntletSnapshot {
 
 export interface GauntletState {
   snapshot: GauntletSnapshot | null;
-  recompute: (params: SimParams) => void;
+  setSnapshot: (snapshot: GauntletSnapshot | null) => void;
 }
 
 /** Historical bootstrap semantics: a real equity/bond mix only when the
@@ -40,7 +40,7 @@ export function allocationScheduleForParams(
   return (step) => glidepathMix(step, retireStep, start, end);
 }
 
-/** Pure computation used by the store action and focused tests. */
+/** Pure computation owned by the committed-parameter driver. */
 export function computeGauntletSnapshot(
   params: SimParams,
   now: () => number = Date.now,
@@ -57,5 +57,5 @@ export function computeGauntletSnapshot(
 
 export const useGauntletStore = create<GauntletState>()((set) => ({
   snapshot: null,
-  recompute: (params) => set({ snapshot: computeGauntletSnapshot(params) }),
+  setSnapshot: (snapshot) => set({ snapshot }),
 }));

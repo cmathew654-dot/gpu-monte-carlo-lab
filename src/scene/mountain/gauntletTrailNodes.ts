@@ -134,10 +134,10 @@ export function buildGauntletTrailNodes() {
     revealAt.add(REVEAL_FEATHER),
     uReveal,
   );
-  const notSingularity = segmentSlot.greaterThan(uint(0));
-  const alpha = float(TRAIL_ALPHA)
-    .mul(visible)
-    .mul(select(notSingularity, float(1.0), float(0.0)));
+  // Segment zero is a real base-to-first-sample interval. Keeping it visible
+  // is essential when a cohort fails or exhausts before the next snap: later
+  // segments collapse at endSlot, leaving this as the only drawable segment.
+  const alpha = float(TRAIL_ALPHA).mul(visible);
   const cohortRgb = select(
     cohort.equal(uint(1)),
     COHORT_COLORS[1],

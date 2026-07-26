@@ -36,9 +36,12 @@ endpoint or a full-horizon pass.
 
 ## Trigger and allocation contract
 
-`gauntletStore.ts` is a dedicated Zustand store; `simStore.ts`, `SimParams`,
-and `SimStats` are untouched. `GauntletDriver` listens only to
-`committedParams`, so slider previews and frame updates never trigger replay.
+`gauntletStore.ts` is a dedicated Zustand store with setter-only actions;
+`simStore.ts`, `SimParams`, and `SimStats` are untouched. The pure historical
+calculation remains outside Zustand in `computeGauntletSnapshot`.
+`GauntletDriver` listens only to `committedParams`, clears stale presentation,
+computes one complete snapshot, then commits it. Slider previews and frame
+updates never trigger replay.
 
 Allocation follows the historical bootstrap convention:
 
@@ -60,7 +63,11 @@ One store snapshot drives both DOM altitudes:
 The Rainier overlay assigns six distinct routes from +Z using golden-angle
 targets. Trail height uses the existing
 `log10(cohort wealth) - log10(simulated median wealth)` offset. Failure stops
-at an ember-red endpoint; exhaustion stops neutrally.
+at an ember-red endpoint; exhaustion stops neutrally. Segment zero remains a
+real drawable interval so first-period failure/exhaustion cannot disappear.
+For horizons whose terminal month falls between regular snapshots (including
+32â€“39 years), the extra terminal slot uses the primary terminal p50 readback
+rather than falling back to initial wealth.
 
 ## WebGPU limits and r185 discipline
 
@@ -80,13 +87,13 @@ carrier is only 372 vertices (4,464 bytes).
 
 All endpoint/index selects are uint-only. A separate float `slotF` select feeds
 route progress. The real production builder is compiled by
-`probe/viz5-probe.js`; the measured emitted shaders are 5,873-byte vertex WGSL
+`probe/viz5-probe.js`; the measured emitted shaders are 5,687-byte vertex WGSL
 and 869-byte fragment WGSL with zero Tint errors.
 
 ## Verification
 
 - Existing gauntlet engine suite: 26 passed.
-- W2-B focused engine/store/sampling/copy/route suite: 35 passed.
+- W2-B focused engine/store/sampling/copy/route suite: 38 passed.
 - Literature anchors remain: 1929 survives a 30-year 4% rule; 1966 fails at
   month 338 (year 28.17); 1966 max SWR is 3.91%.
 - SwiftShader validates WGSL but cannot provide physical-GPU performance or

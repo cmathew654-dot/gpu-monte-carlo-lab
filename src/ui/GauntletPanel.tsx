@@ -4,7 +4,10 @@
  */
 import { useEffect, type CSSProperties } from 'react';
 import { GAUNTLET_CSS_COLORS } from '../sim/gauntlet/palette';
-import { useGauntletStore } from '../store/gauntletStore';
+import {
+  computeGauntletSnapshot,
+  useGauntletStore,
+} from '../store/gauntletStore';
 import { useSimStore } from '../store/simStore';
 import { fmtPct, fmtUSDCompact } from './format';
 import {
@@ -17,11 +20,12 @@ type CohortStyle = CSSProperties & { '--cohort-color': string };
 /** Runs only when committedParams changes; slider-preview writes never land. */
 export function GauntletDriver() {
   const committedParams = useSimStore((state) => state.committedParams);
-  const recompute = useGauntletStore((state) => state.recompute);
+  const setSnapshot = useGauntletStore((state) => state.setSnapshot);
 
   useEffect(() => {
-    recompute(committedParams);
-  }, [committedParams, recompute]);
+    setSnapshot(null);
+    setSnapshot(computeGauntletSnapshot(committedParams));
+  }, [committedParams, setSnapshot]);
 
   return null;
 }

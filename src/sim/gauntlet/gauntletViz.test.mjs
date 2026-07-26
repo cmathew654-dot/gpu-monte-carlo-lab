@@ -15,6 +15,7 @@ import {
   computeGauntletSnapshot,
   useGauntletStore,
 } from '../../store/gauntletStore.ts';
+import { buildMedianLogSamples } from '../../scene/mountain/medianLogSamples.ts';
 import {
   cohortPresentation,
   gauntletNarrative,
@@ -99,6 +100,19 @@ console.log('\n[gauntlet-viz b] SNAP_MAX trail sampling');
   check('failure trail includes the death slot', sampledFailure.validCount === 4);
   check('death slot is post-clamp zero', sampledFailure.wealth[3] === 0);
 
+  const earlyFailure = sampleReplayForTrail(
+    {
+      ...failedReplay,
+      failureMonth: 2,
+      failureYear: 2 / 12,
+      monthsSimulated: 3,
+      wealthPath: [1_000, 900, 800, 0],
+    },
+    30,
+  );
+  check('first-interval failure retains one drawable segment', earlyFailure.endSlot === 1);
+  check('first-interval failure retains its red endpoint', earlyFailure.validCount === 2);
+
   const exhaustedReplay = {
     failed: false,
     failureMonth: null,
@@ -162,14 +176,51 @@ console.log('\n[gauntlet-viz c] committed allocation + snapshot');
   check('snapshot timestamps the committed computation', snapshot.computedAt === 1234);
 
   useGauntletStore.setState({ snapshot: null });
-  useGauntletStore.getState().recompute(DEFAULT_SIM_PARAMS);
+  useGauntletStore.getState().setSnapshot(snapshot);
   check(
-    'dedicated store action lands one complete snapshot',
-    useGauntletStore.getState().snapshot?.result.cohorts.length === 6,
+    'dedicated store setter lands the precomputed snapshot unchanged',
+    useGauntletStore.getState().snapshot === snapshot,
   );
 }
 
-console.log('\n[gauntlet-viz d] client/advisor presentation truth');
+console.log('\n[gauntlet-viz d] partial-terminal median reference');
+{
+  const quantiles = new Float32Array(30 * 5);
+  quantiles.fill(1_100_000);
+  const samples = buildMedianLogSamples(
+    1_000_000,
+    {
+      snapCount: 30,
+      snapStrideMonths: 13,
+      horizonMonths: 384,
+      totalPaths: 100,
+      hist: new Uint32Array(),
+      quantiles,
+      cumFailure: new Float32Array(30),
+      computedAt: 1,
+    },
+    {
+      successRate: 1,
+      percentiles: {
+        p5: 1_200_000,
+        p25: 1_500_000,
+        p50: 2_000_000,
+        p75: 2_500_000,
+        p95: 3_000_000,
+      },
+      worstDecileMaxDD: 0,
+      safeWithdrawalRate: 0,
+      medianFailureYear: null,
+      computedAt: 1,
+    },
+  );
+  check(
+    'partial terminal slot uses terminal p50, not initial wealth',
+    Math.abs(samples[30] - Math.log10(2_000_000)) < 1e-6,
+  );
+}
+
+console.log('\n[gauntlet-viz e] client/advisor presentation truth');
 {
   const survived = {
     cohortId: 'gd1929',
@@ -204,7 +255,7 @@ console.log('\n[gauntlet-viz d] client/advisor presentation truth');
   check('narrative is evidence-grounded in named years', /1929/.test(narrative) && /1966/.test(narrative));
 }
 
-console.log('\n[gauntlet-viz e] fixed golden-angle routes');
+console.log('\n[gauntlet-viz f] fixed golden-angle routes');
 {
   const count = 12;
   const points = new Float32Array(count * ROUTE_POINTS * 3);
