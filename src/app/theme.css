@@ -943,9 +943,37 @@ body,
   pointer-events: none; /* canvas stays draggable around the controls */
 }
 
+.client-hud__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 0;
+}
+
 .client-hud__narrative {
   max-width: 720px;
   text-align: center;
+}
+
+.client-hud__model-basis {
+  margin: 0 0 9px;
+  color: #a8c8ff;
+  font-family: var(--font-data);
+  font-size: 11px;
+  letter-spacing: 0.045em;
+  line-height: 1.2;
+}
+
+.client-hud__model-basis::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  margin: 0 8px 3px 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .client-hud__sentence {
@@ -1119,11 +1147,9 @@ body,
 }
 
 .gauntlet-panel--client {
-  top: calc(9vh + 118px);
-  left: 50%;
+  position: static;
   width: min(790px, calc(100vw - 48px));
   padding: 11px 13px 10px;
-  transform: translateX(-50%);
 }
 
 .gauntlet-panel__heading {
@@ -1313,7 +1339,6 @@ body,
 
 @media (max-width: 720px) {
   .gauntlet-panel--client {
-    top: calc(9vh + 105px);
     width: calc(100vw - 24px);
   }
 
@@ -2137,8 +2162,96 @@ select {
     left: 316px;
   }
 
+}
+
+/* Short landscape windows need information hierarchy, not another guessed
+ * absolute offset. The headline and gauntlet stay in document flow; secondary
+ * audit copy collapses while the plan result, model count, cohort outcomes,
+ * and two core controls remain visible. */
+@media (max-height: 560px) {
+  .client-hud {
+    justify-content: space-between;
+    padding: 16px 18px 12px;
+  }
+
+  .client-hud__top {
+    gap: 9px;
+  }
+
+  .client-hud__model-basis {
+    margin-bottom: 5px;
+    font-size: 9px;
+  }
+
+  .client-hud__sentence {
+    font-size: clamp(23px, 8.8vh, 32px);
+    line-height: 1.08;
+  }
+
+  .client-hud__subline {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .client-hud__subline--saturation,
+  .client-hud__subline--drawdown,
+  .client-hud__subline--frontier {
+    display: none;
+  }
+
   .gauntlet-panel--client {
-    top: calc(9vh + 250px);
+    width: min(790px, calc(100vw - 36px));
+    padding: 7px 9px 6px;
+  }
+
+  .gauntlet-panel--client .gauntlet-panel__heading h2 {
+    font-size: 11px;
+  }
+
+  .gauntlet-panel--client .gauntlet-panel__heading > .data-label,
+  .gauntlet-panel--client .gauntlet-chip__detail,
+  .gauntlet-panel--client .gauntlet-panel__narrative,
+  .gauntlet-panel--client .gauntlet-panel__note {
+    display: none;
+  }
+
+  .gauntlet-panel--client .gauntlet-chips {
+    grid-template-columns: repeat(6, minmax(62px, 1fr));
+    gap: 4px;
+    margin-top: 5px;
+    padding-bottom: 0;
+  }
+
+  .gauntlet-panel--client .gauntlet-chip {
+    min-height: 24px;
+    padding: 4px 5px 3px;
+  }
+
+  .gauntlet-panel--client .gauntlet-chip::before {
+    top: 6px;
+    left: 5px;
+    width: 3px;
+    height: 3px;
+  }
+
+  .gauntlet-panel--client .gauntlet-chip__year {
+    padding-left: 6px;
+    font-size: 9px;
+  }
+
+  .client-hud__bottom {
+    gap: 6px;
+  }
+
+  .client-hud__presets,
+  .client-hud__credit {
+    display: none;
+  }
+
+  .client-hud__sliders {
+    gap: 8px 24px;
+    padding: 8px 14px 6px;
   }
 }
 

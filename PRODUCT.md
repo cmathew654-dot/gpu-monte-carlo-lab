@@ -71,7 +71,10 @@ median. Copy leads with a natural frequency:
 
 > In 70 of 100 futures, your money outlives you.
 
-When all models have completed, the sentence becomes a range. When failures
+When the three committed-change comparisons complete, the sentence becomes a
+three-model range. A current, explicitly completed Robustness Frontier replaces
+that with the four-model range and says that four statistical market models
+tested the plan; stale or partial work never earns that claim. When failures
 exist, the second line states timing and typical magnitude in plain language.
 Six historical cohort chips make named retirements tangible.
 
@@ -83,10 +86,10 @@ same committed plan at a different decision scale:
 1. **Simulated futures** shows the outcome distribution, percentiles, safe
    withdrawal rate, worst-decile drawdown, and failure timing and magnitude.
 2. **Robustness frontier** compares tested real monthly spending across GBM,
-   historical block bootstrap, and Student-t(5) models. Its robust spend is the
-   highest **tested** real monthly spending at which **every included model**
-   reaches the 90-in-100 target; it is a comparison result, not advice or a
-   guarantee.
+   historical block bootstrap, Student-t(5), and frontier-only Regime-t. Its
+   robust spend is the highest **tested** real monthly spending at which
+   **every included model** reaches the 90-in-100 target; it is a comparison
+   result, not advice or a guarantee.
 3. **Historical gauntlet** keeps six named retirement cohorts in view rather
    than blending adverse sequences into an anonymous distribution.
 
@@ -130,7 +133,8 @@ number, delay core controls, or ignore reduced-motion preferences.
 ## Quantitative contract
 
 - Up to 1,000,000 GPU paths; CPU fallback remains functional.
-- Models: GBM, 12-month historical block bootstrap, Student-t(5).
+- Models: GBM, 12-month historical block bootstrap, and Student-t(5) as the
+  selectable primary family; Regime-t as a frontier-only fourth lens.
 - Historical data: 1,206 monthly real total returns, 1926-01 through 2026-06,
   including month-aligned equity and 10-year Treasury blocks.
 - Deterministic seeding and CPU↔GPU lockstep are requirements, not amenities.

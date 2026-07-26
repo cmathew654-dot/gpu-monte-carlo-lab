@@ -30,6 +30,7 @@ import type { ModelComparison, RobustnessFrontier } from '../sim/frontier/types'
 import { CapabilityBadge } from './CapabilityBadge';
 import { ParamSlider } from './controls';
 import { fmtPct, fmtUSD, fmtUSDCompact } from './format';
+import { GauntletPanel } from './GauntletPanel';
 import {
   clientRobustSpendSentence,
   clientSaturationSentence,
@@ -59,19 +60,60 @@ export function ClientNarrative({
 }: ClientNarrativeProps) {
   const successCount = stats === null ? null : Math.round(stats.successRate * 100);
   const comparison = modelComparison ? comparisonRange(modelComparison) : null;
-  const successLow = comparison ? Math.round(comparison.success.min * 100) : successCount;
-  const successHigh = comparison ? Math.round(comparison.success.max * 100) : successCount;
+  const currentFrontier = frontierStatus === 'complete'
+    && isFrontierCurrent(frontierResult, committedParams, mode)
+    ? frontierResult
+    : null;
+  const hasFourModelFrontier = currentFrontier !== null
+    && ['gbm', 'bootstrap', 'fattail', 'regime'].every((model) =>
+      currentFrontier.models.some((result) => result.model === model));
+  const frontierSuccessRates = hasFourModelFrontier
+    ? currentFrontier.models.map(({ outcome }) => outcome.stats.successRate)
+    : null;
+  const successLow = frontierSuccessRates
+    ? Math.round(Math.min(...frontierSuccessRates) * 100)
+    : comparison
+      ? Math.round(comparison.success.min * 100)
+      : successCount;
+  const successHigh = frontierSuccessRates
+    ? Math.round(Math.max(...frontierSuccessRates) * 100)
+    : comparison
+      ? Math.round(comparison.success.max * 100)
+      : successCount;
   const failureYear = stats?.medianFailureYear === null || stats === null
     ? null
     : Math.round(stats.medianFailureYear);
-  const saturation = modelComparison ? clientSaturationSentence(modelComparison) : null;
-  const robustSpend = frontierStatus === 'complete'
-    && isFrontierCurrent(frontierResult, committedParams, mode)
-    ? clientRobustSpendSentence(frontierResult)
+  const saturation = hasFourModelFrontier
+    ? frontierSuccessRates?.every((rate) => rate === 1)
+      ? 'All four market lenses reached 100.0% success: the ceiling of this measure, not a guarantee.'
+      : null
+    : modelComparison
+      ? clientSaturationSentence(modelComparison)
+      : null;
+  const robustSpend = currentFrontier
+    ? clientRobustSpendSentence(currentFrontier)
     : null;
+  const modelBasis = hasFourModelFrontier
+    ? {
+        visible: 'Your plan, tested through four statistical market models',
+        detail: 'GBM, historical bootstrap, Student-t(5), and Regime-t',
+      }
+    : modelComparison
+      ? {
+          visible: 'Your plan, tested through three statistical market models',
+          detail: 'GBM, historical bootstrap, and Student-t(5)',
+        }
+      : {
+          visible: 'Building your multi-model plan stress test',
+          detail: 'The comparison range appears when the background analyses finish',
+        };
 
   return (
     <div className="client-hud__narrative">
+      <p className="client-hud__model-basis">
+        {modelBasis.visible}
+        <span className="sr-only">. {modelBasis.detail}.</span>
+      </p>
       <p className="client-hud__sentence" aria-live="polite">
         {successCount === null ? (
           'Listening to a hundred thousand possible futures…'
@@ -84,9 +126,13 @@ export function ClientNarrative({
           </React.Fragment>
         )}
       </p>
-      {saturation && <p className="client-hud__subline">{saturation}</p>}
+      {saturation && (
+        <p className="client-hud__subline client-hud__subline--saturation">
+          {saturation}
+        </p>
+      )}
       {failureYear !== null && (
-        <p className="client-hud__subline">
+        <p className="client-hud__subline client-hud__subline--failure">
           When it fails, it fails around year {failureYear}
           {magnitudeStats?.medianShortfallYears !== null
           && magnitudeStats?.medianShortfallYears !== undefined
@@ -100,12 +146,16 @@ export function ClientNarrative({
         </p>
       )}
       {stats && (
-        <p className="client-hud__subline">
+        <p className="client-hud__subline client-hud__subline--drawdown">
           Across the roughest 1 in 10 futures, the deepest peak-to-trough drop
           averaged {fmtPct(stats.worstDecileMaxDD, 1)}.
         </p>
       )}
-      {robustSpend && <p className="client-hud__subline">{robustSpend}</p>}
+      {robustSpend && (
+        <p className="client-hud__subline client-hud__subline--frontier">
+          {robustSpend}
+        </p>
+      )}
     </div>
   );
 }
@@ -137,15 +187,18 @@ export function ClientHud() {
 
   return (
     <div className="client-hud">
-      <ClientNarrative
-        stats={stats}
-        modelComparison={modelComparison}
-        magnitudeStats={magnitudeStats}
-        frontierStatus={frontierStatus}
-        frontierResult={frontierResult}
-        committedParams={committedParams}
-        mode={mode}
-      />
+      <div className="client-hud__top">
+        <ClientNarrative
+          stats={stats}
+          modelComparison={modelComparison}
+          magnitudeStats={magnitudeStats}
+          frontierStatus={frontierStatus}
+          frontierResult={frontierResult}
+          committedParams={committedParams}
+          mode={mode}
+        />
+        <GauntletPanel />
+      </div>
 
       <div className="client-hud__bottom">
         {presets !== null && presets.length > 0 && (

@@ -127,6 +127,37 @@ const frontierResult = {
   computedAt: 123,
 };
 
+const fourModelFrontierResult = {
+  ...frontierResult,
+  models: [
+    {
+      model: 'gbm',
+      outcome: nonSaturatedComparison.models[0],
+      curve: [],
+      capacity90: capacity(3500),
+    },
+    {
+      model: 'bootstrap',
+      outcome: nonSaturatedComparison.models[1],
+      curve: [],
+      capacity90: capacity(3400),
+    },
+    {
+      model: 'fattail',
+      outcome: nonSaturatedComparison.models[2],
+      curve: [],
+      capacity90: capacity(3600),
+    },
+    {
+      model: 'regime',
+      outcome: outcome('regime', 0.81, 132000, 0.62, 19.3),
+      curve: [],
+      capacity90: capacity(3300),
+    },
+  ],
+  robustSpend: 3300,
+};
+
 const statsMarkup = renderToStaticMarkup(
   React.createElement(StatCardsView, {
     stats,
@@ -162,6 +193,9 @@ function clientMarkup(overrides = {}) {
 const saturatedMarkup = clientMarkup();
 assert.match(saturatedMarkup, /ceiling of this measure, not a guarantee/i);
 assert.match(saturatedMarkup, /roughest 1 in 10 futures/i);
+assert.match(saturatedMarkup, /Your plan, tested through three statistical market models/i);
+assert.match(saturatedMarkup, /GBM, historical bootstrap, and Student-t\(5\)/i);
+assert.doesNotMatch(saturatedMarkup, /Regime-t/i);
 assert.doesNotMatch(saturatedMarkup, /guaranteed|recommended|affordable/i);
 
 const nonSaturatedMarkup = clientMarkup({
@@ -178,11 +212,26 @@ const currentFrontierMarkup = clientMarkup({
 assert.match(currentFrontierMarkup, /Across all included models/);
 assert.match(currentFrontierMarkup, /real monthly spending/i);
 
+const fourModelFrontierMarkup = clientMarkup({
+  stats: { ...stats, successRate: 0.7, medianFailureYear: 22.4 },
+  modelComparison: nonSaturatedComparison,
+  frontierStatus: 'complete',
+  frontierResult: fourModelFrontierResult,
+});
+assert.match(fourModelFrontierMarkup, /Your plan, tested through four statistical market models/i);
+assert.match(
+  fourModelFrontierMarkup,
+  /GBM, historical bootstrap, Student-t\(5\), and Regime-t/i,
+);
+assert.match(fourModelFrontierMarkup, /70.81/);
+
 const runningFrontierMarkup = clientMarkup({
   frontierStatus: 'running',
-  frontierResult,
+  frontierResult: fourModelFrontierResult,
 });
 assert.doesNotMatch(runningFrontierMarkup, /Across all included models/);
+assert.match(runningFrontierMarkup, /three statistical market models/i);
+assert.doesNotMatch(runningFrontierMarkup, /Regime-t/i);
 
 const errorFrontierMarkup = clientMarkup({
   frontierStatus: 'error',
@@ -219,6 +268,8 @@ assert.doesNotMatch(incompleteMarkup, /Across all included models/);
 
 const visualCss = readFileSync('src/app/theme.css', 'utf8');
 const visualHtml = readFileSync('index.html', 'utf8');
+const clientHudSource = readFileSync('src/ui/ClientHud.tsx', 'utf8');
+const appSource = readFileSync('src/app/App.tsx', 'utf8');
 
 assert.match(visualHtml, /Barlow\+Semi\+Condensed/);
 assert.match(visualHtml, /IBM\+Plex\+Mono/);
@@ -237,3 +288,15 @@ assert.match(visualCss, /\.gauntlet-panel--advisor\s*\{\s*z-index:\s*7/);
 assert.match(visualCss, /\.model-triangulation__row > :last-child/);
 assert.match(visualCss, /@media \(max-width: 720px\)/);
 assert.match(visualCss, /@media \(max-width: 600px\)/);
+assert.match(clientHudSource, /className="client-hud__top"/);
+assert.match(clientHudSource, /<GauntletPanel \/>/);
+assert.doesNotMatch(appSource, /viewMode === 'client' && <GauntletPanel \/>/);
+assert.match(
+  visualCss,
+  /\.gauntlet-panel--client\s*\{[^}]*position:\s*static/s,
+);
+assert.match(visualCss, /@media \(max-height: 560px\)/);
+assert.match(
+  visualCss,
+  /@media \(max-height: 560px\)[\s\S]*\.gauntlet-chip__detail[\s\S]*display:\s*none/,
+);

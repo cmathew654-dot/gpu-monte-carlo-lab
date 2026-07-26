@@ -53,7 +53,10 @@ assertRegimeAcceptance(build.artifact, build.orderedStartLogLikelihoods);
 const serialized = `${JSON.stringify(build.artifact, null, 2)}\n`;
 if (process.argv.includes('--check')) {
   const committed = readFileSync(outputPath, 'utf8');
-  if (committed !== serialized) {
+  // Git may materialize JSON as CRLF on Windows. Preserve byte-for-byte
+  // content checking after normalizing only the platform line separator.
+  const normalizedCommitted = committed.replace(/\r\n/g, '\n');
+  if (normalizedCommitted !== serialized) {
     throw new Error(
       'Committed regimeCalibration.json differs from deterministic calibration output',
     );

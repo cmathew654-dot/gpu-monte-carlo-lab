@@ -134,7 +134,6 @@ export default function App() {
           panel is a DOM sibling of the canvas so every scene fact has an
           accessible client/advisor representation. */}
       <GauntletDriver />
-      {!presentation && viewMode === 'client' && <GauntletPanel />}
 
       {presentation ? (
         <PresentationOverlay />
