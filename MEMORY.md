@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:982aa74 + production deploy 6a665dc290a1d9fa1fab5612
+verified_against: git:2b7a9c3 + production deploy 6a6664a86c760905de08d74d
 review_by: 2026-08-09
 ---
 
@@ -185,6 +185,43 @@ Mutable operational handoff only.
 - Next action: treat `docs/MODEL_RIGOR_ROADMAP.md` as research, not an approved
   amendment. The smallest next product slice is the read-only Advisor market
   filter plus explicit latest-filtered/stationary/forced-stress sensitivity.
+
+### C-008 — Client evidence hierarchy and model explainer
+
+- Status: completed, committed, visually verified, and deployed.
+- Trigger: the client historical cohort card still hid the Rainier scene, the
+  committed household inputs were not visible near the result, and the client
+  had no plain-language explanation of the four statistical lenses.
+- Experience outcome: the client Gauntlet is now a transparent, borderless
+  evidence line with six year/status markers instead of an opaque card grid.
+  The result is preceded by a committed-plan readout covering invested wealth,
+  monthly saving, monthly spending, retirement timing, horizon, and allocation.
+- Method outcome: a collapsed, keyboard-focusable `How we tested this`
+  disclosure explains GBM as baseline compounding, historical bootstrap as
+  real one-year sequences, Student-t(5) as more extreme months, and Regime-t as
+  persistent clustered stress with joint stocks/bonds. It says all four ran
+  only for a current complete four-model Frontier; otherwise it explicitly says
+  three run automatically and Regime-t joins the full robustness test.
+- CPU fallback outcome: duplicate advisor fallback readouts are suppressed only
+  when the client HUD is present, leaving one capability badge and one source of
+  result truth without changing CPU computation.
+- Visual evidence: read-only browser review passed at 982×800 and the reported
+  982×319 short-landscape viewport. The Gauntlet computed transparent with no
+  border; visible client leaf elements had zero intersections. The open model
+  disclosure measured 620×233.8 px and remained fully visible at y=78.5–312.3
+  in the 319 px viewport.
+- Verification: focused Frontier/UI tests, TypeScript, lint, production build,
+  all simulation/statistics/Gauntlet/triangulation/Regime/frontier validation
+  suites, launcher tests, and the real Viz5 TSL probe exited zero. The final
+  production assets are `index-CgCDKsH9.js` and `index-BaxRAZaH.css`.
+- Source commit: `2b7a9c3`. Production deploy:
+  `6a6664a86c760905de08d74d`, state `ready`, published
+  2026-07-26T19:49:01.075Z. Independent HTTPS verification returned 200.
+- Frozen surfaces: untouched. No simulation formula, buffer layout, worker
+  protocol, `SimParams`, or `SimStats` contract changed.
+- Next action: the planned Advisor market-filter slice remains the next
+  quantitative product addition; this change only repairs client hierarchy and
+  methodology disclosure.
 
 ## Verified imported state
 

@@ -603,3 +603,29 @@ Netlify deployment `6a665dc290a1d9fa1fab5612` reports `ready`, published
 documentation. Independent HTTPS verification returned 200, loaded
 `index-CtNLOqQ6.js` and `index-LHPkB58d.css`, found the four-model client copy,
 and found the static Gauntlet plus max-height compact rule in production CSS.
+
+## 2026-07-26 client evidence-hierarchy release
+
+Commit `2b7a9c3` replaces the opaque client Gauntlet card and boxed cohort chips
+with a transparent evidence line, adds a committed-plan readout, and adds a
+collapsed client explanation of the four statistical lenses. The explainer is
+truth-gated: it claims all four models ran only for a current complete
+four-model Frontier and otherwise distinguishes the three automatic analyses
+from the on-demand Regime-t robustness test.
+
+Read-only browser verification covered both 982×800 and the reported 982×319
+short-landscape viewport. The final Gauntlet computed to `rgba(0, 0, 0, 0)`
+with no border, exactly one capability badge rendered, every plan/model/cohort
+control remained in the viewport, and measured intersections among visible
+client leaf elements were empty. The open four-model disclosure measured
+620×233.8 px and fit at y=78.5–312.3 in the 319 px viewport without internal
+scrolling. Client-mode CPU fallback duplicates are suppressed from presentation
+only; the worker computation and client result remain active.
+
+The focused Frontier/UI suite, TypeScript, lint, build, simulation, statistics,
+Gauntlet, triangulation, Regime, baseline validation, Frontier validation,
+launcher regression, and production Viz5 TSL probe all exited zero. The static
+bundle was published as Netlify deployment `6a6664a86c760905de08d74d`, state
+`ready`, at 2026-07-26T19:49:01.075Z. A dist-only staging upload excluded source
+and documentation. Independent HTTPS verification returned 200 and referenced
+the expected `index-CgCDKsH9.js` and `index-BaxRAZaH.css` assets.
