@@ -567,3 +567,39 @@ were uploaded: one generated page and seven assets; source, tests, and internal
 planning documents were excluded. A fresh HTTPS request returned status 200,
 content type `text/html; charset=UTF-8`, 1,011 bytes, the expected application
 root, and the release asset `index-CXDfHSRG.js`.
+
+## 2026-07-26 client provenance and compact-Gauntlet release
+
+Commit `982aa74` repairs the reported client-view collision without changing a
+simulation formula, frozen interface, buffer, worker protocol, model ID, or
+financial operation order.
+
+The client narrative and historical Gauntlet now share one normal-flow top
+stack. A live browser measurement at a 982×319 content viewport returned these
+non-overlapping vertical bounds:
+
+| Surface | Top | Bottom |
+| --- | ---: | ---: |
+| Client narrative | 16 px | 62.109375 px |
+| Historical Gauntlet | 71.109375 px | 131.609375 px |
+| Core controls | 202 px | 307 px |
+
+The client model claim is result-gated. Three-model triangulation can publish
+only the three-model label/range. A complete, current four-model Frontier can
+publish the four-model label and its GBM/bootstrap/Student-t/Regime-t success
+range. Focused server-render tests reject stale, running, wrong-engine, and
+partial Frontier claims.
+
+The complete root and A6 release gates exited zero. `test:validate` remained
+56/56; the independent Frontier validator reproduced 51.49%, 60.31%, 51.58%,
+and 64.91% current success at 10,000 paths and seed 42, with a tested robust
+90% capacity of $3,476.5625/month. `test:regime` reproduced the 1,206-month
+artifact, four agreeing starts, and rolling-origin log score 4.3010423089 versus
+4.2562176532 for the one-state comparator. The Windows checker now normalizes
+only CRLF to LF before its strict deterministic artifact comparison.
+
+Netlify deployment `6a665dc290a1d9fa1fab5612` reports `ready`, published
+2026-07-26T19:19:35.237Z. A dist-only staging upload excluded source and project
+documentation. Independent HTTPS verification returned 200, loaded
+`index-CtNLOqQ6.js` and `index-LHPkB58d.css`, found the four-model client copy,
+and found the static Gauntlet plus max-height compact rule in production CSS.

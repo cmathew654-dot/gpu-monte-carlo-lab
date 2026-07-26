@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:fe2b92f + production deploy 6a664cf926780901772552c0
+verified_against: git:982aa74 + production deploy 6a665dc290a1d9fa1fab5612
 review_by: 2026-08-09
 ---
 
@@ -149,6 +149,42 @@ Mutable operational handoff only.
   expected `index-CXDfHSRG.js` asset reference.
 - Next action: run the documented physical-GPU performance/parity protocol and
   add a captured demo GIF when suitable hardware is available.
+
+### C-007 — Client model provenance and short-viewport repair
+
+- Status: completed, committed, validated, and deployed.
+- Trigger: the 982×319 client view allowed independently positioned narrative
+  and Gauntlet overlays to collide, and it did not visibly state how many
+  statistical models supported the displayed range.
+- Layout outcome: `ClientHud` now owns one normal-flow top stack containing the
+  narrative and client Gauntlet. At content viewport 982×319, measured bounds
+  were narrative 16–62 px, Gauntlet 71–132 px, and controls 202–307 px. The
+  short-height mode preserves the headline, cohort outcomes, and two core
+  controls while collapsing secondary audit prose, presets, and attribution.
+- Provenance outcome: a complete, current four-model Frontier drives the client
+  success range and states that four statistical market models tested the plan.
+  Before that exact complete result exists, the UI honestly reports three
+  models after triangulation or a build-in-progress message. Running, stale,
+  partial, and wrong-engine Frontier results never earn the four-model claim.
+- Reproducibility repair: `scripts/buildRegimeCalibration.ts` normalizes only
+  CRLF to LF before strict artifact comparison, keeping deterministic content
+  checking intact across Windows Git worktrees.
+- Research outcome: `docs/MODEL_RIGOR_ROADMAP.md` records current all-real-dollar
+  semantics, the proposed Advisor market-filter readout, and the rigor ladder:
+  joint nominal/CPI paths, parameter uncertainty and international histories,
+  richer regimes, stochastic volatility/jumps, then household risks.
+- Verified outcome: root gate, A6 regime/frontier gates, build, production TSL
+  graph probe, compute probe, and independent four-model validation all exited
+  zero. Exact current Frontier validation remains 51.49% / 60.31% / 51.58% /
+  64.91% success for GBM/bootstrap/Student-t/Regime-t at 10,000 paths, seed 42,
+  with a $3,476.5625/month robust 90% tested floor.
+- Source commit: `982aa74`. Production deploy: `6a665dc290a1d9fa1fab5612`,
+  state `ready`, published 2026-07-26T19:19:35.237Z. HTTPS verification returned
+  200 and assets `index-CtNLOqQ6.js` / `index-LHPkB58d.css`; only staged `dist`
+  contents were uploaded.
+- Next action: treat `docs/MODEL_RIGOR_ROADMAP.md` as research, not an approved
+  amendment. The smallest next product slice is the read-only Advisor market
+  filter plus explicit latest-filtered/stationary/forced-stress sensitivity.
 
 ## Verified imported state
 
