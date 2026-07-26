@@ -75,6 +75,7 @@ import {
   type TriStats,
 } from '../store/simStore';
 import { useFrontierStore } from '../store/frontierStore';
+import { createGpuWorkCoordinator } from './gpuWorkCoordinator';
 import { simRuntime } from './simRuntime';
 
 /**
@@ -115,52 +116,27 @@ export function SimDriver() {
     }
 
     let disposed = false;
-    let controller: AbortController | null = null;
-    let token = 0;
-    let normalPipeline: Promise<void> | null = null;
-    let frontierController: AbortController | null = null;
-    let frontierToken = 0;
-    let frontierPipeline: Promise<void> | null = null;
-    const isCurrent = (t: number) => !disposed && t === token;
-    const abortFrontierForNormal = (): Promise<void> => {
-      const activeFrontier = frontierController;
-      const pendingFrontier = frontierPipeline;
-      if (!activeFrontier) return pendingFrontier ?? Promise.resolve();
-
-      activeFrontier.abort();
-      if (frontierController === activeFrontier) {
-        frontierController = null;
-      }
-      frontierToken += 1;
-      // A commit/mode transition normally cleared the store before this
-      // pipeline starts. Previews and semantic no-op commits do not, so clear
-      // only a live lifecycle and preserve a completed artifact.
-      if (useFrontierStore.getState().status === 'running') {
-        useFrontierStore.getState().clear();
-      }
-      return pendingFrontier ?? Promise.resolve();
-    };
+    const coordinator = createGpuWorkCoordinator();
 
     const runPipeline = async (
       params: SimParams,
       withSafeWithdrawal: boolean,
       preview = false,
     ): Promise<void> => {
+      if (disposed) return;
       // Full runs, previews, and SWR all own the shared buffers. Abort and
       // invalidate a frontier before this pipeline can dispatch to the GPU.
-      const pendingFrontier = abortFrontierForNormal();
+      const work = coordinator.beginNormal();
       // Abort any in-flight run — one fresh AbortController per change
       // (CONTRACTS_STATS.md §4/§6). Also covers preview runs: the commit's
       // full-count sim (or a newer preview) aborts a stale preview.
-      controller?.abort();
-      controller = new AbortController();
-      const signal = controller.signal;
-      const myToken = ++token;
-      let settleNormal!: () => void;
-      const thisNormalPipeline = new Promise<void>((resolve) => {
-        settleNormal = resolve;
-      });
-      normalPipeline = thisNormalPipeline;
+      const { signal } = work;
+      if (
+        work.supersededFrontier
+        && useFrontierStore.getState().status === 'running'
+      ) {
+        useFrontierStore.getState().clear();
+      }
 
       const {
         markRecomputing,
@@ -174,10 +150,10 @@ export function SimDriver() {
       } = useSimStore.getState();
       markRecomputing(true);
       try {
-        await pendingFrontier;
-        if (!isCurrent(myToken)) return;
+        await work.waitForPriorOwners;
+        if (!work.isCurrent()) return;
         await runSimulation({ renderer, params, bootstrapData, signal });
-        if (!isCurrent(myToken)) return;
+        if (!work.isCurrent()) return;
         let primaryComputed: ComputedStats | null = null;
         let stats;
         if (withSafeWithdrawal) {
@@ -193,14 +169,14 @@ export function SimDriver() {
           setMagnitudeStats(primaryComputed.magnitude);
           stats = primaryComputed.stats;
         }
-        if (!isCurrent(myToken)) return;
+        if (!work.isCurrent()) return;
         setStats(stats);
         // viz2: per-snapshot distribution readback (12,288 B — histograms,
         // survivor quantiles, cumulative failure). Same param-change-only
         // trigger as the stats readback above; after recomputeStats the GPU
         // state matches `params` even when an SWR search ran (it restores).
         const snap = await runSnapHistPassesAndRead(renderer, params);
-        if (!isCurrent(myToken)) return;
+        if (!work.isCurrent()) return;
         setSnapshotStats(snap);
         // Preview mode flips exactly when the displayed sim changes class:
         // a landed preview shows "LIVE · 10k preview"; the next landed full
@@ -218,7 +194,7 @@ export function SimDriver() {
             params,
             stats.percentiles.p50,
           );
-          if (!isCurrent(myToken)) return;
+          if (!work.isCurrent()) return;
           setHeroPathIndex(hero);
         } catch (heroErr) {
           if (signal.aborted) return;
@@ -252,7 +228,7 @@ export function SimDriver() {
               params: secondaryParams,
               signal,
             });
-            if (!isCurrent(myToken)) return;
+            if (!work.isCurrent()) return;
             successRates[model] = secondary.stats.successRate;
             outcomes.set(model, modelOutcome(model, secondary));
           }
@@ -265,7 +241,7 @@ export function SimDriver() {
             bootstrapData,
             signal,
           });
-          if (!isCurrent(myToken)) return;
+          if (!work.isCurrent()) return;
           const comparison = orderedModelComparison(outcomes, params);
           setTriStats({ successRates, computedAt: 0 });
           setModelComparison(comparison);
@@ -279,11 +255,8 @@ export function SimDriver() {
         if (signal.aborted) return;
         console.error('[SimDriver] GPU simulation failed:', err);
       } finally {
-        if (isCurrent(myToken)) markRecomputing(false);
-        settleNormal();
-        if (normalPipeline === thisNormalPipeline) {
-          normalPipeline = null;
-        }
+        if (work.isCurrent()) markRecomputing(false);
+        work.settle();
       }
     };
 
@@ -297,34 +270,19 @@ export function SimDriver() {
     const requestRobustnessFrontier = () => {
       // Keep the reference: a later committed object identity makes this
       // request stale even when its values happen to compare equal.
+      if (disposed) return;
       const captured = useSimStore.getState().committedParams;
-      const pendingFrontier = abortFrontierForNormal();
-      const pendingNormal = normalPipeline;
-      const supersededNormal = controller !== null;
-      controller?.abort();
-      token += 1;
-
-      const requestController = new AbortController();
-      frontierController = requestController;
-      const signal = requestController.signal;
-      const myFrontierToken = ++frontierToken;
+      const work = coordinator.beginFrontier();
+      const { signal } = work;
       const frontierStore = useFrontierStore.getState();
       frontierStore.begin(
         frontierEvaluationBudgetForThreeModels(captured.withdrawal),
       );
-
-      let settleFrontier!: () => void;
-      const thisFrontierPipeline = new Promise<void>((resolve) => {
-        settleFrontier = resolve;
-      });
-      frontierPipeline = thisFrontierPipeline;
       void (async () => {
         const isCurrentFrontier = () => {
           const current = useSimStore.getState();
-          return !disposed
+          return work.isCurrent()
             && !signal.aborted
-            && myFrontierToken === frontierToken
-            && frontierController === requestController
             && current.mode === 'gpu'
             && current.committedParams === captured;
         };
@@ -332,10 +290,11 @@ export function SimDriver() {
         try {
           // Abort is cooperative. Await the normal finally and any prior
           // frontier terminal work so only one shared-buffer owner runs.
-          await pendingNormal;
-          await pendingFrontier;
+          await work.waitForPriorOwners;
           if (!isCurrentFrontier()) return;
-          if (supersededNormal) useSimStore.getState().markRecomputing(false);
+          if (work.supersededNormal) {
+            useSimStore.getState().markRecomputing(false);
+          }
 
           const result = await runGpuRobustnessFrontier(
             {
@@ -370,13 +329,7 @@ export function SimDriver() {
             .getState()
             .fail(error instanceof Error ? error.message : String(error));
         } finally {
-          if (frontierController === requestController) {
-            frontierController = null;
-          }
-          settleFrontier();
-          if (frontierPipeline === thisFrontierPipeline) {
-            frontierPipeline = null;
-          }
+          work.settle();
         }
       })();
     };
@@ -434,8 +387,9 @@ export function SimDriver() {
     return () => {
       disposed = true;
       clearPreviewTimer();
-      controller?.abort();
-      void abortFrontierForNormal();
+      const frontierWasRunning = useFrontierStore.getState().status === 'running';
+      coordinator.dispose();
+      if (frontierWasRunning) useFrontierStore.getState().clear();
       useSimStore.getState().setPreviewMode(false);
       unsubscribe();
       if (simRuntime.requestSafeWithdrawal === requestSafeWithdrawal) {
