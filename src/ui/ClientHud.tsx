@@ -107,6 +107,15 @@ export function ClientNarrative({
           visible: 'Building your multi-model plan stress test',
           detail: 'The comparison range appears when the background analyses finish',
         };
+  const allocation = committedParams.glidepath === null
+    ? '100% equities'
+    : Math.round(committedParams.glidepath.start * 100)
+      + '→'
+      + Math.round(committedParams.glidepath.end * 100)
+      + '% equities';
+  const retirementTiming = committedParams.retireYear === 0
+    ? 'retire now'
+    : 'retire in ' + committedParams.retireYear + ' years';
 
   return (
     <div className="client-hud__narrative">
@@ -114,6 +123,60 @@ export function ClientNarrative({
         {modelBasis.visible}
         <span className="sr-only">. {modelBasis.detail}.</span>
       </p>
+      <p className="client-hud__plan-basis">
+        Plan: {fmtUSDCompact(committedParams.initialWealth)} invested
+        {' · '}{fmtUSD(committedParams.contribution)}/mo saved
+        {' · '}{fmtUSD(committedParams.withdrawal)}/mo spending
+        {' · '}{retirementTiming}
+        {' · '}{committedParams.horizonYears}-year horizon
+        {' · '}{allocation}
+      </p>
+      <details className={'client-hud__method'}>
+        <summary>
+          <span>How we tested this</span>
+          <span className={'client-hud__method-state'}>
+            {hasFourModelFrontier
+              ? '4 models complete'
+              : '3 now · 1 full stress test'}
+          </span>
+        </summary>
+        <div className={'client-hud__method-panel'}>
+          <p>No model predicts the future. Each keeps a different risk visible.</p>
+          <ul className={'client-hud__method-list'}>
+            <li>
+              <strong>Baseline compounding</strong>
+              <span>GBM · A clean reference case for month-to-month growth.</span>
+            </li>
+            <li>
+              <strong>History in one-year pieces</strong>
+              <span>
+                Historical bootstrap · Replays real stock and bond sequences
+                instead of inventing them.
+              </span>
+            </li>
+            <li>
+              <strong>More extreme months</strong>
+              <span>Student-t(5) · Makes rare market shocks more common.</span>
+            </li>
+            <li>
+              <strong>Stress that persists</strong>
+              <span>
+                Regime-t · Keeps turbulent conditions clustered while
+                simulating stocks and bonds jointly.
+              </span>
+            </li>
+          </ul>
+          <p className={'client-hud__method-status'}>
+            {hasFourModelFrontier
+              ? 'All four ran on this plan.'
+              : 'Three run automatically. Regime-t joins the full robustness test.'}
+          </p>
+          <p>
+            Why it helps: agreement is more reassuring; disagreement shows
+            which assumption matters.
+          </p>
+        </div>
+      </details>
       <p className="client-hud__sentence" aria-live="polite">
         {successCount === null ? (
           'Listening to a hundred thousand possible futures…'

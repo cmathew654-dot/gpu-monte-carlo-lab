@@ -195,7 +195,23 @@ assert.match(saturatedMarkup, /ceiling of this measure, not a guarantee/i);
 assert.match(saturatedMarkup, /roughest 1 in 10 futures/i);
 assert.match(saturatedMarkup, /Your plan, tested through three statistical market models/i);
 assert.match(saturatedMarkup, /GBM, historical bootstrap, and Student-t\(5\)/i);
-assert.doesNotMatch(saturatedMarkup, /Regime-t/i);
+assert.match(saturatedMarkup, /Plan: \$1(?:\.00)?M invested/i);
+assert.match(saturatedMarkup, /\$0\/mo saved/i);
+assert.match(saturatedMarkup, /\$4,000\/mo spending/i);
+assert.match(saturatedMarkup, /retire now/i);
+assert.match(saturatedMarkup, /30-year horizon/i);
+assert.match(saturatedMarkup, /100% equities/i);
+assert.match(saturatedMarkup, /How we tested this/i);
+assert.match(saturatedMarkup, /No model predicts the future/i);
+assert.match(saturatedMarkup, /Baseline compounding/i);
+assert.match(saturatedMarkup, /History in one-year pieces/i);
+assert.match(saturatedMarkup, /More extreme months/i);
+assert.match(saturatedMarkup, /Stress that persists/i);
+assert.match(
+  saturatedMarkup,
+  /Three run automatically\. Regime-t joins the full robustness test/i,
+);
+assert.doesNotMatch(saturatedMarkup, /All four ran on this plan/i);
 assert.doesNotMatch(saturatedMarkup, /guaranteed|recommended|affordable/i);
 
 const nonSaturatedMarkup = clientMarkup({
@@ -224,6 +240,7 @@ assert.match(
   /GBM, historical bootstrap, Student-t\(5\), and Regime-t/i,
 );
 assert.match(fourModelFrontierMarkup, /70.81/);
+assert.match(fourModelFrontierMarkup, /All four ran on this plan/i);
 
 const runningFrontierMarkup = clientMarkup({
   frontierStatus: 'running',
@@ -231,7 +248,7 @@ const runningFrontierMarkup = clientMarkup({
 });
 assert.doesNotMatch(runningFrontierMarkup, /Across all included models/);
 assert.match(runningFrontierMarkup, /three statistical market models/i);
-assert.doesNotMatch(runningFrontierMarkup, /Regime-t/i);
+assert.doesNotMatch(runningFrontierMarkup, /All four ran on this plan/i);
 
 const errorFrontierMarkup = clientMarkup({
   frontierStatus: 'error',
@@ -270,6 +287,8 @@ const visualCss = readFileSync('src/app/theme.css', 'utf8');
 const visualHtml = readFileSync('index.html', 'utf8');
 const clientHudSource = readFileSync('src/ui/ClientHud.tsx', 'utf8');
 const appSource = readFileSync('src/app/App.tsx', 'utf8');
+const shortHeightRuleIndex = visualCss.indexOf('@media (max-height: 560px)');
+const baseClientCss = visualCss.slice(0, shortHeightRuleIndex);
 
 assert.match(visualHtml, /Barlow\+Semi\+Condensed/);
 assert.match(visualHtml, /IBM\+Plex\+Mono/);
@@ -299,4 +318,29 @@ assert.match(visualCss, /@media \(max-height: 560px\)/);
 assert.match(
   visualCss,
   /@media \(max-height: 560px\)[\s\S]*\.gauntlet-chip__detail[\s\S]*display:\s*none/,
+);
+assert.match(
+  baseClientCss,
+  /\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s,
+);
+assert.match(
+  baseClientCss,
+  /\.gauntlet-panel--client \.gauntlet-chip__detail,[\s\S]{0,300}display:\s*none/,
+);
+assert.match(
+  baseClientCss,
+  /\.gauntlet-panel--client \.gauntlet-chip\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s,
+);
+assert.match(visualCss, /\.client-hud__method > summary:focus-visible/);
+assert.match(
+  visualCss,
+  /\.gauntlet-panel\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent/s,
+);
+assert.match(
+  visualCss,
+  /\.app-shell:has\(\.client-hud\) \.fallback-container > \.capability-badge\s*\{[^}]*display:\s*none/s,
+);
+assert.match(
+  visualCss,
+  /\.app-shell:has\(\.client-hud\) \.fallback-container > \.fallback-dom\s*\{[^}]*display:\s*none/s,
 );
