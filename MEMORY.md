@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: imported-wave-1-source-snapshot
+verified_against: git:36e428d
 review_by: 2026-08-09
 ---
 
@@ -24,16 +24,15 @@ Mutable operational handoff only.
 
 ### C-001 — Establish the durable workspace
 
-- Status: in progress
+- Status: completed
 - Outcome sought: a clean Git-backed project root with scoped agent guidance,
   custom roles, product truth, current state, and evidence-bearing plans.
 - Scope: repository root, `.codex/`, `docs/`, nested `AGENTS.md` files.
 - Source snapshot: copied from the attached Wave-1 archive; original extraction
   remains untouched.
-- Next action: initialize Git, install locked dependencies, and verify the
-  imported baseline from this workspace.
-- Done when: source and governance files are committed and baseline results are
-  recorded against a commit SHA.
+- Verified outcome: committed as `36e428d`; dependencies installed; full root
+  gate and launcher regression test pass from this workspace.
+- Next action: create both Wave-2 branches from the final documented base.
 
 ### C-002 — Wave 2A: model triangulation
 
@@ -82,10 +81,11 @@ commit `7398c71`, but that SHA cannot be verified from the archive itself.
 | `npm run test:gauntlet` | 26 pass | local run, 2026-07-26 |
 | `npm run test:validate` | 56 pass | local run, 2026-07-26 |
 | `npm run build` | pass | local run, 2026-07-26 |
-| `node probe/run-viz5-probe.mjs` | environment-blocked | Windows launcher constructs a POSIX-style URL pathname and hardcodes `/usr/bin/chromium`; Tint was not reached |
+| `npm run test:probe-launcher` | 6 pass | cross-platform path/browser resolution |
+| `node probe/run-viz5-probe.mjs` | pass | 194 routes, zero missing summits, eight WGSL outputs, zero probe errors |
+| `npm audit --omit=dev --json` | 0 production vulnerabilities | local registry audit, 2026-07-26 |
 
-Do not call the baseline fully green until the probe launcher is made
-cross-platform and the real production graphs compile successfully.
+The full baseline is green at `36e428d`. Re-run it after every branch merge.
 
 ### Validation numbers to use when refreshing `DEMO.md`
 
@@ -124,13 +124,11 @@ Full rationale: `docs/DECISIONS.md`.
 
 ## Future — not committed
 
-1. Make the probe launcher cross-platform and compile the real node graphs.
-2. Create and verify the base Git commit.
-3. Execute W2-A on `p2-trig`; merge only after the full gate.
-4. Execute W2-B on `p2-gauntletviz`; merge only after the full gate.
-5. Run Wave-3 integration, update product evidence, deploy the static build, and
+1. Execute W2-A on `p2-trig`; merge only after the full gate.
+2. Execute W2-B on `p2-gauntletviz`; merge only after the full gate.
+3. Run Wave-3 integration, update product evidence, deploy the static build, and
    add the live URL/GIF.
-6. Measure real-hardware WebGPU performance before publishing frame-time claims.
+4. Measure real-hardware WebGPU performance before publishing frame-time claims.
 
 The stretch goal to code-split GPU buffers in CPU mode remains optional; skip it
 if it makes frozen buffer initialization or Canvas ownership invasive.

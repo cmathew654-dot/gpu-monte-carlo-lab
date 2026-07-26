@@ -1,15 +1,15 @@
 # Wave 2 Execution Plan
 
-Status: approved design; implementation not started.
+Status: base verified at `36e428d`; implementation not started.
 
 ## Base preparation
 
-- Initialize the imported source as a Git repository.
-- Install locked dependencies.
-- Fix only the cross-platform probe launcher necessary to reach the real Tint
+- [x] Initialize the imported source as a Git repository.
+- [x] Install locked dependencies.
+- [x] Fix only the cross-platform probe launcher necessary to reach the real Tint
   compile on Windows.
-- Run and record the full baseline against the base commit.
-- Create `p2-trig` and `p2-gauntletviz` from that same commit.
+- [x] Run and record the full baseline against the base commit.
+- [ ] Create `p2-trig` and `p2-gauntletviz` from the final documented base.
 
 ## W2-A — Model triangulation and failure magnitude
 
