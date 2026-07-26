@@ -234,3 +234,9 @@ made because the frozen SimDriver integrator wiring is outside A3's
 scope. The frozen SimStats flow remains store-free. Trigger, abort, and
 staleness semantics are identical to §4 (same readback, same commit
 boundary).
+
+## 11. ADDENDUM (Amendment A4, Part B): No stochastic-stat change
+
+Historical gauntlet results are deterministic cohort replays held in a
+dedicated store. They do not extend or reinterpret `SimStats` or
+`MagnitudeStats`. See `docs/AMENDMENT_A4_W2B.md`.

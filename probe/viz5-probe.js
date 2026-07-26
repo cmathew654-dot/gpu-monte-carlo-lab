@@ -41,9 +41,14 @@ import {
 import { buildTerrainData } from '/src/scene/mountain/terrain.ts';
 import { buildTerrainColorNode } from '/src/scene/mountain/terrainColor.ts';
 import { buildMountainTrailNodes } from '/src/scene/mountain/mountainTrailNodes.ts';
+import { buildGauntletTrailNodes } from '/src/scene/mountain/gauntletTrailNodes.ts';
 import { buildMountainEmberNodes } from '/src/scene/mountain/mountainEmberNodes.ts';
 import { buildSummitNodes } from '/src/scene/mountain/summitNodes.ts';
 import {
+  gauntletEndSlot,
+  gauntletEndState,
+  gauntletRouteIndex,
+  gauntletWealth,
   medianLog,
   routeDown,
   routeNrm,
@@ -135,6 +140,18 @@ async function main() {
     for (let s = 0; s < 32; s++) a.array[s] = 6 + s * 0.01; // synthetic p50
     a.needsUpdate = true;
   }
+  {
+    const wealth = new Float32Array(6 * 32);
+    for (let cohort = 0; cohort < 6; cohort++) {
+      for (let snap = 0; snap < 32; snap++) {
+        wealth[cohort * 32 + snap] = 1_000_000 * (1 + cohort * 0.08 + snap * 0.02);
+      }
+    }
+    fill(gauntletWealth, wealth);
+    fill(gauntletEndSlot, new Uint32Array([30, 30, 24, 30, 26, 18]));
+    fill(gauntletEndState, new Uint32Array([0, 0, 1, 0, 2, 2]));
+    fill(gauntletRouteIndex, new Uint32Array([0, 31, 62, 93, 124, 155]));
+  }
   uReveal.value = 0.5;
 
   const scene = new Scene();
@@ -203,7 +220,34 @@ async function main() {
     out('getShaderAsync(trails) THREW: ' + e.message);
   }
 
-  // --- 3c) ember material ---------------------------------------------------
+  // --- 3c) historical gauntlet trails (REAL production graph) ------------
+  try {
+    const nodes = buildGauntletTrailNodes();
+    const mat = new LineBasicNodeMaterial();
+    mat.transparent = true;
+    mat.depthWrite = false;
+    mat.blending = AdditiveBlending;
+    mat.positionNode = nodes.positionNode;
+    mat.colorNode = nodes.colorNode;
+    const geo = new BufferGeometry();
+    geo.setAttribute(
+      'position',
+      new Float32BufferAttribute(new Float32Array(512 * 3), 3),
+    );
+    const lines = new LineSegments(geo, mat);
+    lines.frustumCulled = false;
+    scene.add(lines);
+    const shaders = await renderer.debug.getShaderAsync(scene, camera, lines);
+    window.__probe.wgsl.gauntletVertex = shaders.vertexShader;
+    window.__probe.wgsl.gauntletFragment = shaders.fragmentShader;
+    out('gauntlet WGSL OK (' + shaders.vertexShader.length + '/' + shaders.fragmentShader.length + ' chars)');
+    scene.remove(lines);
+  } catch (e) {
+    window.__probe.errors.push('getShaderAsync(gauntlet): ' + (e.stack || e.message));
+    out('getShaderAsync(gauntlet) THREW: ' + e.message);
+  }
+
+  // --- 3d) ember material ---------------------------------------------------
   try {
     const nodes = buildMountainEmberNodes();
     const mat = new SpriteNodeMaterial();
@@ -227,7 +271,7 @@ async function main() {
     out('getShaderAsync(embers) THREW: ' + e.message);
   }
 
-  // --- 3d) summit cairn sprite (REAL production graph — summitNodes.ts) ---
+  // --- 3e) summit cairn sprite (REAL production graph — summitNodes.ts) ---
   try {
     const nodes = buildSummitNodes(data.summit);
     const mat = new SpriteNodeMaterial();

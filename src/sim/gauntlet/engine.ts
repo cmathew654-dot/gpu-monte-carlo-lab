@@ -144,6 +144,10 @@ export interface ReplayResult {
   monthsSimulated: number;
   /** True when the series ran out before the requested horizon. */
   exhaustedData: boolean;
+  /** Month-end real wealth path including the initial value at index 0.
+   * Length is always monthsSimulated + 1. Failure ends with the post-clamp
+   * zero; exhaustion ends at the final observed historical month. */
+  wealthPath: number[];
 }
 
 /**
@@ -170,6 +174,7 @@ export function replayCohort(
   };
   let minWealth = params.initialWealth;
   let monthsSimulated = 0;
+  const wealthPath = [params.initialWealth];
 
   for (let t = 0; t < steps; t++) {
     const m = startMonth + t;
@@ -182,6 +187,7 @@ export function replayCohort(
     applyMonthlyStep(state, gross, t, retireStep, params.contribution, withdrawal);
     if (state.wealth < minWealth) minWealth = state.wealth;
     monthsSimulated = t + 1;
+    wealthPath.push(state.wealth);
     if (state.failed !== 0) break; // absorbing failure (cpuSim gate)
   }
 
@@ -195,6 +201,7 @@ export function replayCohort(
     minWealth,
     monthsSimulated,
     exhaustedData: !failed && monthsSimulated < steps,
+    wealthPath,
   };
 }
 

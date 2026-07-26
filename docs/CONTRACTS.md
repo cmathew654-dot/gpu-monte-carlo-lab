@@ -538,3 +538,11 @@ additive `magnitude` field of the §6 worker result message, wired through
   signature, the A1/A2 snapshot contract (§9), the PCG hash itself, and
   all §2.6 tolerance gates.
 
+## 11. ADDENDUM (Amendment A4, Part B): Historical gauntlet presentation
+
+The additive deterministic replay path, dedicated store, 840-byte view-buffer
+layout, committed-parameter trigger, failure/exhaustion metadata, and seven-
+storage-binding Rainier graph are specified in
+`docs/AMENDMENT_A4_W2B.md`. Frozen `SimParams`, `SimStats`, stochastic buffer
+layouts, kernels, and worker protocol are unchanged.
+

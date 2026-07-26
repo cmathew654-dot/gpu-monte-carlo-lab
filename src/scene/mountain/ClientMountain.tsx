@@ -25,6 +25,7 @@ import { ConeParticles } from '../ConeParticles';
 import { PercentileBands } from '../PercentileBands';
 import { TrajectoryLines } from '../TrajectoryLines';
 import { MountainEmbers } from './MountainEmbers';
+import { GauntletMountainTrails } from './GauntletMountainTrails';
 import { MountainTrails } from './MountainTrails';
 import { SummitMarker } from './SummitMarker';
 import { TerrainMesh } from './TerrainMesh';
@@ -97,6 +98,7 @@ export function ClientMountain() {
       <directionalLight position={[18, 5, 22]} intensity={0.3} color="#3a4a70" />
       <TerrainMesh data={data} />
       <MountainTrails data={data} />
+      <GauntletMountainTrails data={data} />
       <MountainEmbers data={data} />
       <SummitMarker data={data} />
       <MountainReveal />

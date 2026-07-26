@@ -11,12 +11,15 @@
  *   medianLog   float × SNAP_MAX            log10(p50 survivor wealth) per
  *                                           snap (from snapshotStats — the
  *                                           existing param-change readback)
+ *   gauntlet*   additive W2-B view buffers: six × SNAP_MAX wealth samples
+ *               plus endpoint state and fixed route metadata
  */
 import { instancedArray, uniform } from 'three/tsl';
 import { SNAP_MAX } from '../../sim/model/history';
 import { ROUTE_COUNT, ROUTE_POINTS } from './routes';
 
 const ROUTE_FLOATS = ROUTE_COUNT * ROUTE_POINTS * 3;
+export const GAUNTLET_COHORT_COUNT = 6;
 
 /** World-space route points (on the terrain surface). */
 export const routePos = instancedArray(ROUTE_FLOATS, 'float');
@@ -26,6 +29,21 @@ export const routeNrm = instancedArray(ROUTE_FLOATS, 'float');
 export const routeDown = instancedArray(ROUTE_FLOATS, 'float');
 /** log10 of the median SURVIVOR wealth per snapshot (p50 of snap quantiles). */
 export const medianLog = instancedArray(SNAP_MAX, 'float');
+
+/** W2-B cohort-major real wealth [6 × SNAP_MAX]. */
+export const gauntletWealth = instancedArray(
+  GAUNTLET_COHORT_COUNT * SNAP_MAX,
+  'float',
+);
+/** Last meaningful sampled slot for each cohort. */
+export const gauntletEndSlot = instancedArray(GAUNTLET_COHORT_COUNT, 'uint');
+/** 0 horizon, 1 failure, 2 exhausted historical data. */
+export const gauntletEndState = instancedArray(GAUNTLET_COHORT_COUNT, 'uint');
+/** Fixed golden-angle-spread route index for each cohort. */
+export const gauntletRouteIndex = instancedArray(
+  GAUNTLET_COHORT_COUNT,
+  'uint',
+);
 
 /** Number of valid routes in the buffers (≤ ROUTE_COUNT). */
 export const uRouteCount = uniform(ROUTE_COUNT, 'uint');
