@@ -235,7 +235,12 @@ scope. The frozen SimStats flow remains store-free. Trigger, abort, and
 staleness semantics are identical to §4 (same readback, same commit
 boundary).
 
-
 ## Amendment A4 (Wave 2)
 
 Model triangulation, store-free secondary stats, failure-magnitude presentation, and device-loss CPU fallback are specified in [AMENDMENT_A4.md](AMENDMENT_A4.md). Frozen shapes and A3 semantics remain unchanged.
+
+## 11. ADDENDUM (Amendment A4, Part B): No stochastic-stat change
+
+Historical gauntlet results are deterministic cohort replays held in a
+dedicated store. They do not extend or reinterpret `SimStats` or
+`MagnitudeStats`. See `docs/AMENDMENT_A4_W2B.md`.

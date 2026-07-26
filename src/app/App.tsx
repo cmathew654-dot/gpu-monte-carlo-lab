@@ -14,6 +14,7 @@ import { CapabilityBadge } from '../ui/CapabilityBadge';
 import { ClientHud } from '../ui/ClientHud';
 import { ControlPanel } from '../ui/ControlPanel';
 import { CpuFallbackView } from '../ui/CpuFallbackView';
+import { GauntletDriver, GauntletPanel } from '../ui/GauntletPanel';
 import { PlayheadHud } from '../ui/PlayheadHud';
 import { PresentationOverlay } from '../ui/PresentationOverlay';
 import { ReadThisCaption } from '../ui/ReadThisCaption';
@@ -119,6 +120,12 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* W2-B: deterministic replay runs from committedParams only. The
+          panel is a DOM sibling of the canvas so every scene fact has an
+          accessible client/advisor representation. */}
+      <GauntletDriver />
+      {!presentation && <GauntletPanel />}
 
       {presentation ? (
         <PresentationOverlay />

@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:sim": "esbuild src/validation/cpuSim.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/cpuSim.test.bundle.mjs && node node_modules/.tmp/cpuSim.test.bundle.mjs",
-    "test:gauntlet": "esbuild src/sim/gauntlet/gauntlet.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/gauntlet.test.bundle.mjs && node node_modules/.tmp/gauntlet.test.bundle.mjs",
+    "test:gauntlet": "esbuild src/sim/gauntlet/gauntlet.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/gauntlet.test.bundle.mjs && node node_modules/.tmp/gauntlet.test.bundle.mjs && esbuild src/sim/gauntlet/gauntletViz.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/gauntletViz.test.bundle.mjs && node node_modules/.tmp/gauntletViz.test.bundle.mjs",
     "test:stats":"esbuild src/sim/stats/stats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/stats.test.bundle.mjs && node node_modules/.tmp/stats.test.bundle.mjs && esbuild src/sim/stats/snapStats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/snapStats.test.bundle.mjs && node node_modules/.tmp/snapStats.test.bundle.mjs",
     "test:validate": "esbuild src/validation/validate.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/validate.bundle.mjs && node node_modules/.tmp/validate.bundle.mjs",
     "test:probe-launcher": "node probe/launcherPaths.test.mjs",

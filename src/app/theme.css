@@ -1099,3 +1099,235 @@ body,
   line-height: 1.45;
   margin: 10px 0 0;
 }
+
+/* --- W2-B: named historical cohort HUD ----------------------------------
+ * A single flat field-instrument surface, not another KPI-card grid. Cohort
+ * hue links the DOM legend to its Rainier trail; symbols/text preserve the
+ * result without color. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gauntlet-panel {
+  position: absolute;
+  z-index: 7;
+  pointer-events: auto;
+  color: var(--fg);
+  background: rgba(4, 6, 13, 0.9);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, #416080);
+  border-radius: var(--radius-panel);
+}
+
+.gauntlet-panel--client {
+  top: calc(9vh + 118px);
+  left: 50%;
+  width: min(790px, calc(100vw - 48px));
+  padding: 11px 13px 10px;
+  transform: translateX(-50%);
+}
+
+.gauntlet-panel__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.gauntlet-panel__heading h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+
+.gauntlet-panel__heading p {
+  margin: 3px 0 0;
+  color: #b5bbc5;
+  font-size: 11px;
+}
+
+.gauntlet-panel__heading > .data-label {
+  color: #aeb5c0;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.gauntlet-chips {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(108px, 1fr));
+  gap: 6px;
+  padding: 0 0 3px;
+  margin: 9px 0 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.gauntlet-chip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 6px;
+  min-height: 43px;
+  padding: 7px 8px 6px;
+  background: #0b1018;
+  border: 1px solid #27303d;
+  border-radius: 4px;
+}
+
+.gauntlet-chip::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--cohort-color);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--cohort-color) 65%, transparent);
+}
+
+.gauntlet-chip__year {
+  padding-left: 8px;
+  color: #f3f6fa;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.gauntlet-chip__symbol {
+  color: var(--cohort-color);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gauntlet-chip--failed .gauntlet-chip__symbol {
+  color: var(--danger);
+}
+
+.gauntlet-chip__detail {
+  grid-column: 1 / -1;
+  color: #aeb5c0;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.gauntlet-panel__narrative {
+  margin: 8px 0 0;
+  color: #d6dbe3;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.gauntlet-panel__note,
+.gauntlet-panel__loading {
+  margin: 6px 0 0;
+  color: #aeb5c0;
+  font-family: var(--font-data);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.gauntlet-panel--client .gauntlet-panel__note,
+.gauntlet-panel--client .gauntlet-panel__loading {
+  text-align: center;
+}
+
+.gauntlet-panel--advisor {
+  top: 64px;
+  left: 332px;
+  right: 312px;
+  max-height: 312px;
+  padding: 13px 14px 10px;
+  overflow: hidden;
+  background: rgba(5, 7, 10, 0.96);
+}
+
+.gauntlet-table-wrap {
+  margin-top: 9px;
+  overflow: auto;
+}
+
+.gauntlet-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-table th,
+.gauntlet-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #202733;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.gauntlet-table thead th {
+  color: #aeb5c0;
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.gauntlet-table tbody th {
+  color: #e9edf3;
+  font-weight: 500;
+}
+
+.gauntlet-table__swatch {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--cohort-color);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--cohort-color) 55%, transparent);
+}
+
+.gauntlet-table__status--survived {
+  color: #72d6ad;
+}
+
+.gauntlet-table__status--failed {
+  color: #ff7168;
+}
+
+.gauntlet-table__status--exhausted {
+  color: #e1c26e;
+}
+
+@media (max-width: 1180px) {
+  .gauntlet-panel--advisor {
+    left: 316px;
+    right: 296px;
+  }
+}
+
+@media (max-width: 720px) {
+  .gauntlet-panel--client {
+    top: calc(9vh + 105px);
+    width: calc(100vw - 24px);
+  }
+
+  .gauntlet-panel__heading > .data-label {
+    display: none;
+  }
+ }

@@ -538,8 +538,14 @@ additive `magnitude` field of the §6 worker result message, wired through
   signature, the A1/A2 snapshot contract (§9), the PCG hash itself, and
   all §2.6 tolerance gates.
 
-
-
 ## Amendment A4 (Wave 2)
 
 Model triangulation, store-free secondary stats, failure-magnitude presentation, and device-loss CPU fallback are specified in [AMENDMENT_A4.md](AMENDMENT_A4.md). Frozen shapes and A3 semantics remain unchanged.
+
+## 11. ADDENDUM (Amendment A4, Part B): Historical gauntlet presentation
+
+The additive deterministic replay path, dedicated store, 840-byte view-buffer
+layout, committed-parameter trigger, failure/exhaustion metadata, and seven-
+storage-binding Rainier graph are specified in
+`docs/AMENDMENT_A4_W2B.md`. Frozen `SimParams`, `SimStats`, stochastic buffer
+layouts, kernels, and worker protocol are unchanged.

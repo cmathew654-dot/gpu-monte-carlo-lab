@@ -20,7 +20,6 @@ import {
 } from 'three/webgpu';
 import { PREVIEW_PATH_COUNT, useSimStore } from '../../store/simStore';
 import { getStorageAttribute } from '../../sim/buffers';
-import { SNAP_QUANTILE_LEVELS } from '../../sim/stats/snapStats';
 import {
   alphaScaleForCount,
   lineStrideForBudget,
@@ -35,15 +34,12 @@ import {
   routePos,
   uRouteCount,
 } from './mountainBuffers';
-import { SNAP_MAX } from '../../sim/model/history';
 import { ROUTE_POINTS } from './routes';
 import type { TerrainData } from './terrain';
+import { buildMedianLogSamples } from './medianLogSamples';
 
 /** viz3 hero uniform sentinel: matches the uHeroPath default (uint max). */
 const HERO_NONE = 0xffffffff;
-/** Index of p50 in SNAP_QUANTILE_LEVELS ([0.05, 0.25, 0.5, 0.75, 0.95]). */
-const P50_INDEX = SNAP_QUANTILE_LEVELS.indexOf(0.5);
-
 export function MountainTrails({ data }: { data: TerrainData }) {
   const [vertexCount, setVertexCount] = useState(0);
   const gl = useThree((s) => s.gl);
@@ -125,19 +121,13 @@ export function MountainTrails({ data }: { data: TerrainData }) {
       // the initial wealth at every snap (trails sit at zero offset).
       const medAttr = getStorageAttribute(medianLog);
       const med = medAttr.array as Float32Array;
-      const fallback = Math.log10(Math.max(p.initialWealth, 1));
-      for (let s = 0; s < SNAP_MAX; s++) {
-        const snap = state.snapshotStats;
-        med[s] =
-          snap && s < snap.snapCount
-            ? Math.log10(
-                Math.max(
-                  snap.quantiles[s * SNAP_QUANTILE_LEVELS.length + P50_INDEX],
-                  1,
-                ),
-              )
-            : fallback;
-      }
+      med.set(
+        buildMedianLogSamples(
+          p.initialWealth,
+          state.snapshotStats,
+          state.stats,
+        ),
+      );
       medAttr.needsUpdate = true;
 
       setVertexCount(linePaths * segsPerPath * 2);
