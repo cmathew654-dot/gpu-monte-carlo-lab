@@ -13,6 +13,7 @@ export async function runComputeProbeCheck({
   let thrown = null;
   let gpuError = null;
   let popFailure = null;
+  let popRejected = false;
 
   // pushErrorScope is synchronous. Pop it even after computeAsync rejects so
   // no stale scope can contaminate the next production graph check.
@@ -25,6 +26,7 @@ export async function runComputeProbeCheck({
     try {
       gpuError = await device.popErrorScope();
     } catch (error) {
+      popRejected = true;
       popFailure = error;
       const message = errorMessage(error);
       probe.errors.push(`${name} popErrorScope: ${message}`);
@@ -37,7 +39,7 @@ export async function runComputeProbeCheck({
     probe.checks[name] = `threw: ${message}`;
     probe.errors.push(`${name}: ${message}`);
     out(`${name} THREW: ${message.slice(0, 3000)}`);
-  } else if (popFailure) {
+  } else if (popRejected) {
     probe.checks[name] = `popErrorScope failed: ${errorMessage(popFailure)}`;
   } else if (gpuError) {
     probe.checks[name] = gpuError.message;
