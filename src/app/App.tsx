@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import { CanvasRoot } from '../scene/CanvasRoot';
 import { playhead, uCursorX } from '../scene/playhead';
+import { AdvisorLensNav } from '../ui/AdvisorLensNav';
 import { CapabilityBadge } from '../ui/CapabilityBadge';
 import { ClientHud } from '../ui/ClientHud';
 import { ControlPanel } from '../ui/ControlPanel';
@@ -20,6 +21,7 @@ import { PresentationOverlay } from '../ui/PresentationOverlay';
 import { ReadThisCaption } from '../ui/ReadThisCaption';
 import { StatCards } from '../ui/StatCards';
 import { SwrButton } from '../ui/SwrButton';
+import { useFrontierStore } from '../store/frontierStore';
 import { useSimStore } from '../store/simStore';
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -40,6 +42,10 @@ export default function App() {
   const setPresentation = useSimStore((s) => s.setPresentation);
   const viewMode = useSimStore((s) => s.viewMode);
   const toggleViewMode = useSimStore((s) => s.toggleViewMode);
+  const advisorLens = useFrontierStore((s) => s.advisorLens);
+  const showFutures = viewMode === 'advisor' && advisorLens === 'futures';
+  const showGauntlet = viewMode === 'advisor' && advisorLens === 'gauntlet';
+  const showLegacyAdvisorData = showFutures || showGauntlet;
 
   // 'p' toggles presentation mode; 'a' toggles client ↔ advisor (viz4);
   // Escape exits presentation. Ignored while typing.
@@ -82,6 +88,7 @@ export default function App() {
               retirement simulator · <strong>ADVISOR VIEW</strong>
             </span>
           </div>
+          {!presentation && <AdvisorLensNav />}
           <div className="app-header__actions">
             <CapabilityBadge mode={mode} />
             <button
@@ -113,7 +120,7 @@ export default function App() {
         <CanvasRoot />
         {/* viz2 — year-cursor scrub HUD + dismissable reading caption
             (advisor-only: the cursor plane is hidden in the client view). */}
-        {viewMode === 'advisor' && (
+        {showFutures && (
           <>
             <PlayheadHud />
             <ReadThisCaption />
@@ -125,7 +132,7 @@ export default function App() {
           panel is a DOM sibling of the canvas so every scene fact has an
           accessible client/advisor representation. */}
       <GauntletDriver />
-      {!presentation && <GauntletPanel />}
+      {!presentation && viewMode === 'client' && <GauntletPanel />}
 
       {presentation ? (
         <PresentationOverlay />
@@ -135,9 +142,50 @@ export default function App() {
       ) : (
         <>
           <ControlPanel />
-          <StatCards />
-          {/* Integrator — on-demand safe-withdrawal search (GPU mode). */}
-          <SwrButton />
+          <section
+            id="advisor-lens-panel-futures"
+            role="tabpanel"
+            aria-labelledby="advisor-lens-futures"
+            className="advisor-lens-panel"
+            hidden={advisorLens !== 'futures'}
+          >
+            {showFutures && showLegacyAdvisorData && (
+              <>
+                <StatCards />
+                {/* Integrator — on-demand safe-withdrawal search (GPU mode). */}
+                <SwrButton />
+              </>
+            )}
+          </section>
+          <section
+            id="advisor-lens-panel-frontier"
+            role="tabpanel"
+            aria-labelledby="advisor-lens-frontier"
+            className="advisor-lens-panel"
+            hidden={advisorLens !== 'frontier'}
+          >
+            {advisorLens === 'frontier' && (
+              <p className="advisor-lens-panel__placeholder">
+                Robustness frontier analysis has not been run for this plan.
+              </p>
+            )}
+          </section>
+          <section
+            id="advisor-lens-panel-gauntlet"
+            role="tabpanel"
+            aria-labelledby="advisor-lens-gauntlet"
+            className="advisor-lens-panel"
+            hidden={advisorLens !== 'gauntlet'}
+          >
+            {showGauntlet && showLegacyAdvisorData && (
+              <>
+                <StatCards />
+                {/* Integrator — on-demand safe-withdrawal search (GPU mode). */}
+                <SwrButton />
+                <GauntletPanel />
+              </>
+            )}
+          </section>
         </>
       )}
       <CpuFallbackView />
