@@ -549,3 +549,11 @@ layout, committed-parameter trigger, failure/exhaustion metadata, and seven-
 storage-binding Rainier graph are specified in
 `docs/AMENDMENT_A4_W2B.md`. Frozen `SimParams`, `SimStats`, stochastic buffer
 layouts, kernels, and worker protocol are unchanged.
+
+## Amendment A5 — Robustness Frontier core
+
+The additive multi-stat comparison, measured spending-capacity search,
+dedicated frontier store/worker, and GPU restoration contract are specified in
+[AMENDMENT_A5_ROBUSTNESS_FRONTIER.md](AMENDMENT_A5_ROBUSTNESS_FRONTIER.md).
+Frozen `SimParams`, `SimStats`, `TriStats`, buffers, model IDs, operation order,
+and the existing CPU worker protocol remain unchanged.

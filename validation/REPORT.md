@@ -392,3 +392,58 @@ requirement and the finding routes to the owning agent per spec §5.
 Every number above was produced by the commands in §10 on the commit this
 report ships with (re-run after `bfdc0f2` + merge `7b3720a`). FAIL means
 fail — the original gate's FINDING-1 was routed, fixed, and this gate re-run.*
+
+---
+
+## Amendment A5 — Robustness Frontier core validation (2026-07-26)
+
+**Final validation base:** `9865bfe` (`fix: track rejected compute scopes explicitly`).
+The preceding production-probe commits are `870553f`,
+`450f322`, and `9865bfe`. All statuses in this section
+were emitted from the final base.
+
+### Measured CPU frontier result
+
+```json
+{"date":"2024-07-26T13:20:00.000Z","dataAsOf":{"startDate":"1926-01","endDate":"2026-06","generatedAt":"2026-07-21","source":"Robert J. Shiller, 'Irrational Exuberance' dataset (ie_data.xls), Data sheet, columns P (S&P Composite price), D (dividend, annual rate), CPI, GS10, Monthly Total Bond Returns. Downloaded 2026-07-21 from https://shillerdata.com/ (maintained mirror of http://www.econ.yale.edu/~shiller/data/ie_data.xls). Source file SHA-256: 0e3d716f83f51c14f40c5ab5662e767cde4f83fcb7305db24ab003df2c9ee6c5"},"engine":"cpu","analysisPathCount":10000,"seed":42,"params":{"model":"bootstrap","pathCount":10000,"horizonYears":30,"retireYear":0,"initialWealth":1000000,"contribution":2000,"withdrawal":5000,"mu":0.07,"sigma":0.15,"glidepath":{"start":0.8,"end":0.6},"seed":42},"capacities":[{"model":"gbm","status":"converged","monthlySpending":3632.8125,"successRate":0.9026,"evaluations":10,"evaluatedPoints":10},{"model":"bootstrap","status":"converged","monthlySpending":3476.5625,"successRate":0.9044,"evaluations":10,"evaluatedPoints":10},{"model":"fattail","status":"converged","monthlySpending":3632.8125,"successRate":0.9049,"evaluations":10,"evaluatedPoints":10}],"robustResult":{"monthlySpending":3476.5625,"status":"converged"},"elapsedMs":20899.61}
+```
+
+The command was `npm run test:frontier-validate`. It measured the
+10,000-path CPU basis with seed 42; bootstrap is the limiting measured model.
+
+### Final command matrix
+
+| Command | Status | Fresh result |
+|---|---|---|
+| `npm run test:frontier` | pass | frontier store 24 passed; GPU work coordinator passed; dedicated CPU frontier suite 7 passed |
+| `npm run test:frontier-validate` | pass | JSON above; elapsedMs 20899.61 |
+| `npm run test:compute-probe` | pass | 7 helper checks passed; computeInit, computeStep, computeStatsClear, computeStatsReduce, and computeStatsHistogram passed; device lost null; probe errors empty |
+| `npx tsc -b` | pass | exit 0 |
+| `npm run lint` | pass | exit 0 |
+| `npm run test:sim` | pass | 84 passed, 0 failed |
+| `npm run test:stats` | pass | 52 passed, 0 failed; snapStats 19 passed |
+| `npm run test:gauntlet` | pass | gauntlet 26 passed, 0 failed; gauntletViz 38 passed |
+| `npm run test:validate` | pass | 56 passed, 0 failed |
+| `npm run test:probe-launcher` | pass | 8 passed, 0 failed |
+| `npm run test:triangulation` | pass | triangulation 5 passed; triStats store 5 passed |
+| `npm run build` | pass | 146 modules transformed; build completed in 8.37 s |
+| `node probe/run-viz5-probe.mjs` | pass | 194 routes, routeGenMs 76, routesMissingSummit 0; five WGSL program pairs compiled; probe errors empty |
+
+The build emitted non-failing warnings that browsers data is stale and that a
+minified chunk exceeds 500 kB; neither changed the pass status.
+
+### Frozen-surface audit
+
+The exact frozen diff command exited 0 with no diff:
+
+```text
+git diff --exit-code 56350f8 -- src/ui/cpuSim.worker.ts src/sim/fallback/cpuSim.ts src/sim/runSimulation.ts src/sim/kernels/initPaths.tsl.ts src/sim/kernels/stepPaths.tsl.ts src/sim/buffers.ts
+```
+
+The review of `git diff 56350f8 -- src/store/simStore.ts` showed only additive
+modelComparison state/setter and frontier-store invalidation/clearing; no
+frozen declarations were changed.
+
+Physical-GPU frontier wall time is unmeasured; the SwiftShader compute probe
+validates production graph compilation and binding correctness, not hardware
+performance.

@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:f5a9ebb
+verified_against: git:9865bfe
 review_by: 2026-08-09
 ---
 
@@ -57,6 +57,38 @@ Mutable operational handoff only.
   `9b66419`, merged into integration at `f5a9ebb`; engine + visualization
   suites pass 26 + 38 checks and the real gauntlet graph compiles through
   Tint at 5,687/869-byte WGSL with zero validation errors.
+
+### C-004 — Amendment A5 core: robustness frontier computation contract
+
+- Status: completed
+- Outcome sought: an additive, complete three-model robustness frontier with
+  measured spending capacity, explicit committed-input triggering, and
+  cancellable GPU/CPU execution that preserves the frozen normal simulation
+  path.
+- Scope: frontier types/search/assembly, dedicated frontier lifecycle store and
+  CPU worker, shared GPU work coordination/restoration, deterministic frontier
+  validation, production compute-probe hardening, and canonical contracts.
+- Core history: fe35059 through 9865bfe, including complete outcome publication
+  (169c80e, 0809655), capacity/frontier computation (428c816, 5aca89d,
+  72bf74f, df49086), GPU ownership/restoration (5e01b66, b22f4a2, e379343,
+  f4e5847, 685d59c, eb3f516), the dedicated CPU worker/runtime (852832e,
+  6f55aaa, f44b2e6), deterministic capacity evidence (ac8c2f2), and Task 12
+  probe history (870553f, 450f322, 9865bfe).
+- Verified outcome: final gate from 9865bfe passes focused frontier tests,
+  deterministic CPU frontier validation, TypeScript, lint, simulation, stats,
+  gauntlet, baseline validation, launcher, triangulation, production build,
+  compute probe, and Viz5 probe. The measured seed-42, 10,000-path CPU result
+  is gbm 3632.8125 at 0.9026, bootstrap 3476.5625 at 0.9044, fattail
+  3632.8125 at 0.9049; robust spending is 3476.5625/month, converged, in
+  20899.61 ms. The full command matrix and JSON are in validation/REPORT.md.
+- Frozen surfaces: the exact diff from 56350f8 is empty for cpuSim.worker,
+  cpuSim, runSimulation, initPaths, stepPaths, and buffers. The simStore diff
+  is limited to additive modelComparison state/setter and frontier invalidation.
+- Hardware boundary: Physical-GPU frontier wall time is unmeasured; the
+  SwiftShader compute probe validates production graph compilation and binding
+  correctness, not hardware performance.
+- Next action: Implement the A5 experience plan, then begin Amendment A6 only
+  after A5 is green.
 
 ## Verified imported state
 

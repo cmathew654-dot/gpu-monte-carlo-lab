@@ -244,3 +244,11 @@ Model triangulation, store-free secondary stats, failure-magnitude presentation,
 Historical gauntlet results are deterministic cohort replays held in a
 dedicated store. They do not extend or reinterpret `SimStats` or
 `MagnitudeStats`. See `docs/AMENDMENT_A4_W2B.md`.
+
+## Amendment A5 — Robustness Frontier core
+
+The additive multi-stat comparison, measured spending-capacity search,
+dedicated frontier store/worker, and GPU restoration contract are specified in
+[AMENDMENT_A5_ROBUSTNESS_FRONTIER.md](AMENDMENT_A5_ROBUSTNESS_FRONTIER.md).
+Frozen `SimParams`, `SimStats`, `TriStats`, buffers, model IDs, operation order,
+and the existing CPU worker protocol remain unchanged.
