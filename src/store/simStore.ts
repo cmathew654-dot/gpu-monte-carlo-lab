@@ -18,6 +18,7 @@
  * TypeScript strict, zero `any` (R6).
  */
 import { create } from 'zustand';
+import type { ModelComparison } from '../sim/frontier/types';
 
 // ---------------------------------------------------------------------------
 // Frozen contract — SimParams (spec §4.1)
@@ -266,6 +267,11 @@ export interface SimState {
 
   /** A4: success-rate triangulation across all three return models. */
   triStats: TriStats | null;
+  /** A5: complete outcomes across all three return models. */
+  modelComparison: ModelComparison | null;
+  setModelComparison: (
+    comparison: Omit<ModelComparison, 'computedAt'> | null,
+  ) => void;
   setTriStats: (stats: TriStats | null) => void;
 
   // --- viz3 extension surface (additive; nothing above changes) ------------
@@ -368,6 +374,7 @@ export const useSimStore = create<SimState>()((set, get) => {
         committedParams: params,
         isStale: true,
         triStats: null,
+        modelComparison: null,
       };
     });
   };
@@ -382,6 +389,7 @@ export const useSimStore = create<SimState>()((set, get) => {
         params: normalizeParams({ ...state.params, ...partial }, state.mode),
         isStale: true,
         triStats: null,
+        modelComparison: null,
       }));
       scheduleCommit();
     },
@@ -398,6 +406,7 @@ export const useSimStore = create<SimState>()((set, get) => {
           committedParams: params,
           isStale: params !== state.params ? true : state.isStale,
           triStats: null,
+          modelComparison: null,
         };
       }),
 
@@ -439,10 +448,17 @@ export const useSimStore = create<SimState>()((set, get) => {
           : null,
       }),
     triStats: null,
+    modelComparison: null,
     setTriStats: (triStats) =>
       set({
         triStats: triStats
           ? { ...triStats, computedAt: Date.now() }
+          : null,
+      }),
+    setModelComparison: (modelComparison) =>
+      set({
+        modelComparison: modelComparison
+          ? { ...modelComparison, computedAt: Date.now() }
           : null,
       }),
     setPreviewMode: (previewMode) =>
