@@ -111,9 +111,13 @@ export function TerrainMesh({ data }: { data: TerrainData }) {
     const m = new MeshStandardNodeMaterial();
     m.roughness = 0.95;
     m.metalness = 0.0;
+    m.transparent = true;
+    m.depthWrite = true;
+    m.alphaTest = 0.02;
     const graph = buildTerrainColorNode(data);
     m.colorNode = graph.colorNode;
     m.emissiveNode = graph.emissiveNode;
+    m.opacityNode = graph.opacityNode;
     return m;
   }, [data]);
   useEffect(() => () => material.dispose(), [material]);

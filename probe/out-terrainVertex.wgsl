@@ -16,7 +16,9 @@ struct objectStruct {
 	nodeUniform5 : mat3x3<f32>,
 	nodeUniform7 : f32,
 	nodeUniform8 : f32,
-	nodeUniform9 : f32
+	nodeUniform9 : f32,
+	nodeUniform10 : f32,
+	nodeUniform11 : f32
 };
 @binding( 0 ) @group( 1 )
 var<uniform> object : objectStruct;
@@ -24,10 +26,10 @@ var<uniform> object : objectStruct;
 struct renderStruct {
 	cameraProjectionMatrix : mat4x4<f32>,
 	cameraViewMatrix : mat4x4<f32>,
-	nodeUniform10 : vec3<f32>,
+	nodeUniform12 : vec3<f32>,
+	nodeUniform15 : vec3<f32>,
 	nodeUniform13 : vec3<f32>,
-	nodeUniform11 : vec3<f32>,
-	nodeUniform12 : vec3<f32>
+	nodeUniform14 : vec3<f32>
 };
 @binding( 0 ) @group( 0 )
 var<uniform> render : renderStruct;

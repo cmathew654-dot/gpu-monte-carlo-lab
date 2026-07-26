@@ -167,9 +167,13 @@ async function main() {
   try {
     const mat = new MeshStandardNodeMaterial();
     mat.roughness = 0.95;
+    mat.transparent = true;
+    mat.depthWrite = true;
+    mat.alphaTest = 0.02;
     const terrainGraph = buildTerrainColorNode(data);
     mat.colorNode = terrainGraph.colorNode;
     mat.emissiveNode = terrainGraph.emissiveNode;
+    mat.opacityNode = terrainGraph.opacityNode;
     const geo = new BufferGeometry();
     geo.setAttribute(
       'position',

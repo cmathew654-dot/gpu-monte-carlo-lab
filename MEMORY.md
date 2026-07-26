@@ -223,6 +223,38 @@ Mutable operational handoff only.
   quantitative product addition; this change only repairs client hierarchy and
   methodology disclosure.
 
+### C-009 — Client composition and responsive framing
+
+- Status: implemented and verified on `feat/client-responsive-framing`; not
+  merged or deployed.
+- Composition outcome: the client HUD uses the specified responsive breathing
+  room, the Rainier summit targets 60% of scene height, historical cohort labels
+  remain borderless with a dark text edge, and plan/method/cohort text never
+  drops below 10 px.
+- Responsive outcome: compact-height rules now require a landscape-like aspect
+  ratio. Narrow portrait layouts wrap the committed plan and reflow all six
+  historical cohorts into two rows inside a vertically scrollable HUD.
+- Camera outcome: client terrain views compute a frame-local minimum radius
+  from terrain half-width, vertical FOV, aspect ratio, and a 1.12 safety margin.
+  Stored wheel radius and the Advisor camera path remain unchanged.
+- Terrain outcome: the outermost 1.75 world units fade into the night
+  background with opaque interior depth writing and a 0.02 alpha cutoff. The
+  real Viz5 probe compiles the opacity graph.
+- Visual evidence: read-only Playwright/WebGPU review passed at 982×800,
+  982×443, 982×319, 390×844, and 255×542. Landscape viewports retain one
+  cohort row; portrait viewports retain two rows; no required text falls below
+  10 px. Pixel inspection at 982×800 confirmed the terrain edge falls from
+  luminance 187 near x=900 to approximately 2 by x=950.
+- Verification: `npx tsc -b`, lint, framing, simulation, statistics, Gauntlet,
+  validation, probe-launcher, triangulation, Frontier, Regime, frontier
+  validation, production build, and `node probe/run-viz5-probe.mjs` all exited
+  zero on 2026-07-26. The final probe compiled 194 routes with zero missing
+  summits and zero probe errors.
+- Frozen surfaces: untouched. No simulation formula, store, worker protocol,
+  buffer layout, `SimParams`, or `SimStats` contract changed.
+- Next action: choose whether to merge locally, push for review, or preserve the
+  feature branch.
+
 ## Verified imported state
 
 Wave 1 is present in the source snapshot:

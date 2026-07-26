@@ -21,7 +21,7 @@ import {
   smoothstep,
   uniform,
 } from 'three/tsl';
-import { SNOWLINE_ELEV, type TerrainData } from './terrain';
+import { MOUNTAIN_WORLD_SIZE, SNOWLINE_ELEV, type TerrainData } from './terrain';
 
 export function buildTerrainColorNode(data: TerrainData) {
   const snowlineWorld = (SNOWLINE_ELEV - data.minElev) * data.yScale;
@@ -29,6 +29,8 @@ export function buildTerrainColorNode(data: TerrainData) {
   const uSnowLo = uniform(snowlineWorld);
   const uSnowHi = uniform(snowlineWorld + summitY * 0.12);
   const uSummitY = uniform(Math.max(summitY, 1e-3));
+  const uTerrainHalfWidth = uniform(MOUNTAIN_WORLD_SIZE * 0.5);
+  const uEdgeFadeWidth = uniform(1.75);
 
   const hN = positionWorld.y.div(uSummitY).clamp(0, 1);
   const rock = mix(color(0x1d2a44), color(0x4a5f88), hN.pow(0.8));
@@ -44,10 +46,22 @@ export function buildTerrainColorNode(data: TerrainData) {
     .mul(0.35)
     .mul(snowMask);
 
+  const edgeDistance = uTerrainHalfWidth.sub(
+    positionWorld.x.abs().max(positionWorld.z.abs()),
+  );
+  const opacityNode = smoothstep(0.0, uEdgeFadeWidth, edgeDistance);
+
   return {
     colorNode: mix(rock, snow, snowMask).add(sparkle),
     // Moonlit snow glows faintly even in shadow — "one luminous mountain".
     emissiveNode: snow.mul(snowMask).mul(0.085).add(sparkle.mul(0.5)),
-    uniforms: { uSnowLo, uSnowHi, uSummitY },
+    opacityNode,
+    uniforms: {
+      uSnowLo,
+      uSnowHi,
+      uSummitY,
+      uTerrainHalfWidth,
+      uEdgeFadeWidth,
+    },
   };
 }

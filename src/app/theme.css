@@ -939,7 +939,7 @@ body,
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 9vh 24px 28px;
+  padding: clamp(36px, 6vh, 48px) 24px 28px;
   pointer-events: none; /* canvas stays draggable around the controls */
 }
 
@@ -1037,7 +1037,7 @@ body,
 .client-hud__method-state {
   color: #8fbaff;
   font-family: var(--font-data);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.04em;
   text-decoration: none;
 }
@@ -1447,6 +1447,11 @@ body,
 
 .gauntlet-panel--client .gauntlet-chip__symbol {
   font-size: 10px;
+}
+
+.gauntlet-panel--client .gauntlet-chip__year,
+.gauntlet-panel--client .gauntlet-chip__symbol {
+  text-shadow: 0 1px 1px #000000, 0 0 2px #000000;
 }
 
 .gauntlet-panel--client .gauntlet-chip__detail,
@@ -2386,7 +2391,7 @@ select {
  * absolute offset. The headline and gauntlet stay in document flow; secondary
  * audit copy collapses while the plan result, model count, cohort outcomes,
  * and two core controls remain visible. */
-@media (max-height: 560px) {
+@media (max-height: 560px) and (min-aspect-ratio: 4/3) {
   .client-hud {
     justify-content: space-between;
     padding: 16px 18px 12px;
@@ -2398,12 +2403,12 @@ select {
 
   .client-hud__model-basis {
     margin-bottom: 5px;
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .client-hud__plan-basis {
     margin-bottom: 5px;
-    font-size: 8px;
+    font-size: 10px;
     white-space: nowrap;
   }
 
@@ -2412,11 +2417,11 @@ select {
   }
 
   .client-hud__method > summary {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .client-hud__method-state {
-    font-size: 8px;
+    font-size: 10px;
   }
 
   .client-hud__sentence {
@@ -2470,7 +2475,7 @@ select {
 
   .gauntlet-panel--client .gauntlet-chip__year {
     padding-left: 0;
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .client-hud__bottom {
@@ -2485,6 +2490,51 @@ select {
   .client-hud__sliders {
     gap: 8px 24px;
     padding: 8px 14px 6px;
+  }
+}
+
+@media (max-width: 600px) and (max-aspect-ratio: 3/4) {
+  .client-hud {
+    justify-content: flex-start;
+    gap: 24px;
+    padding: 36px 12px max(24px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .client-hud__top,
+  .client-hud__bottom {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .client-hud__top {
+    gap: 14px;
+  }
+
+  .client-hud__narrative,
+  .gauntlet-panel--client {
+    width: 100%;
+  }
+
+  .client-hud__plan-basis {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .gauntlet-panel--client .gauntlet-chips {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .gauntlet-panel--client .gauntlet-chip {
+    box-sizing: border-box;
+    flex: 0 0 33.333%;
+    padding-inline: 4px;
+  }
+
+  .gauntlet-panel--client .gauntlet-chip:nth-child(3n) {
+    border-inline-end: 0;
   }
 }
 

@@ -287,7 +287,8 @@ const visualCss = readFileSync('src/app/theme.css', 'utf8');
 const visualHtml = readFileSync('index.html', 'utf8');
 const clientHudSource = readFileSync('src/ui/ClientHud.tsx', 'utf8');
 const appSource = readFileSync('src/app/App.tsx', 'utf8');
-const shortHeightRuleIndex = visualCss.indexOf('@media (max-height: 560px)');
+const shortLandscapeRule = '@media (max-height: 560px) and (min-aspect-ratio: 4/3)';
+const shortHeightRuleIndex = visualCss.indexOf(shortLandscapeRule);
 const baseClientCss = visualCss.slice(0, shortHeightRuleIndex);
 
 assert.match(visualHtml, /Barlow\+Semi\+Condensed/);
@@ -307,6 +308,10 @@ assert.match(visualCss, /\.gauntlet-panel--advisor\s*\{\s*z-index:\s*7/);
 assert.match(visualCss, /\.model-triangulation__row > :last-child/);
 assert.match(visualCss, /@media \(max-width: 720px\)/);
 assert.match(visualCss, /@media \(max-width: 600px\)/);
+assert.match(
+  visualCss,
+  /padding:\s*clamp\(36px,\s*6vh,\s*48px\)\s+24px\s+28px/,
+);
 assert.match(clientHudSource, /className="client-hud__top"/);
 assert.match(clientHudSource, /<GauntletPanel \/>/);
 assert.doesNotMatch(appSource, /viewMode === 'client' && <GauntletPanel \/>/);
@@ -314,10 +319,14 @@ assert.match(
   visualCss,
   /\.gauntlet-panel--client\s*\{[^}]*position:\s*static/s,
 );
-assert.match(visualCss, /@media \(max-height: 560px\)/);
 assert.match(
   visualCss,
-  /@media \(max-height: 560px\)[\s\S]*\.gauntlet-chip__detail[\s\S]*display:\s*none/,
+  /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)/,
+);
+assert.doesNotMatch(visualCss, /@media \(max-height: 560px\)\s*\{/);
+assert.match(
+  visualCss,
+  /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)[\s\S]*\.gauntlet-chip__detail[\s\S]*display:\s*none/,
 );
 assert.match(
   baseClientCss,
@@ -332,6 +341,31 @@ assert.match(
   /\.gauntlet-panel--client \.gauntlet-chip\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s,
 );
 assert.match(visualCss, /\.client-hud__method > summary:focus-visible/);
+assert.match(
+  baseClientCss,
+  /\.client-hud__method-state\s*\{[^}]*font-size:\s*10px/s,
+);
+assert.match(
+  visualCss,
+  /\.gauntlet-panel--client \.gauntlet-chip__year,[\s\S]{0,160}\.gauntlet-panel--client \.gauntlet-chip__symbol[\s\S]{0,180}text-shadow:/,
+);
+assert.match(
+  visualCss,
+  /@media \(max-width: 600px\) and \(max-aspect-ratio: 3\/4\)[\s\S]*\.gauntlet-panel--client \.gauntlet-chips\s*\{[^}]*flex-wrap:\s*wrap/s,
+);
+const compactClientCss = visualCss.slice(shortHeightRuleIndex);
+for (const selector of [
+  'client-hud__model-basis',
+  'client-hud__plan-basis',
+  'client-hud__method > summary',
+  'client-hud__method-state',
+  'gauntlet-panel--client \.gauntlet-chip__year',
+]) {
+  assert.match(
+    compactClientCss,
+    new RegExp('\\.' + selector + '\\s*\\{[^}]*font-size:\\s*(?:1[0-9]|[2-9][0-9])px', 's'),
+  );
+}
 assert.match(
   visualCss,
   /\.gauntlet-panel\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent/s,

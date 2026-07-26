@@ -34,7 +34,7 @@
 - Consumes: `MOUNTAIN_WORLD_SIZE`, stored wheel radius, `PerspectiveCamera.fov`, and `camera.aspect`.
 - Produces: `mountainFitRadius(baseRadius: number, terrainHalfWidth: number, verticalFovDegrees: number, aspect: number, margin?: number): number`.
 
-- [ ] **Step 1: Write the failing camera-fit tests**
+- [x] **Step 1: Write the failing camera-fit tests**
 
 ```js
 import assert from 'node:assert/strict';
@@ -45,14 +45,14 @@ assert.equal(mountainFitRadius(base, 13, 45, 982 / 800), base);
 assert.ok(mountainFitRadius(base, 13, 45, 390 / 844) > base);
 assert.ok(mountainFitRadius(base, 13, 45, 255 / 542) > base);
 assert.ok(
-  mountainFitRadius(base, 13, 45, 255 / 542)
-    > mountainFitRadius(base, 13, 45, 390 / 844),
+  mountainFitRadius(base, 13, 45, 390 / 844)
+    > mountainFitRadius(base, 13, 45, 255 / 542),
 );
 assert.equal(mountainFitRadius(base, 13, 45, Number.NaN), base);
 assert.equal(mountainFitRadius(base, 13, 0, 0.5), base);
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -63,7 +63,7 @@ node node_modules/.tmp/cameraFit.test.bundle.mjs
 
 Expected: FAIL because `src/scene/cameraFit.ts` does not exist.
 
-- [ ] **Step 3: Implement the minimum effective radius**
+- [x] **Step 3: Implement the minimum effective radius**
 
 ```ts
 export const MOUNTAIN_FIT_MARGIN = 1.12;
@@ -100,7 +100,7 @@ export function mountainFitRadius(
 
 In `CameraRig`, keep clamping `radius.current` to the existing mountain wheel range, derive a frame-local effective radius only for a ready client terrain and a perspective camera, and change the mountain target to `getTerrainSummitY() * 0.60`.
 
-- [ ] **Step 4: Run focused camera tests and verify GREEN**
+- [x] **Step 4: Run focused camera tests and verify GREEN**
 
 Run:
 
@@ -120,7 +120,7 @@ Expected: all camera-fit assertions pass, with finite radii that increase monoto
 - Consumes: existing `.client-hud*` and `.gauntlet-panel--client*` DOM classes.
 - Produces: landscape-only compact treatment and portrait reflow without markup or data changes.
 
-- [ ] **Step 1: Extend CSS contract assertions**
+- [x] **Step 1: Extend CSS contract assertions**
 
 Add assertions requiring:
 
@@ -143,7 +143,7 @@ assert.match(
 
 Also assert that the compact block contains no `font-size: 8px` or `font-size: 9px` declarations for model, plan, method, or cohort evidence.
 
-- [ ] **Step 2: Run the UI test and verify RED**
+- [x] **Step 2: Run the UI test and verify RED**
 
 Run:
 
@@ -153,7 +153,7 @@ npm run test:frontier
 
 Expected: FAIL on the new responsive contracts because the stylesheet still has a height-only compact query, `9vh` normal padding, sub-10px evidence text, and a non-wrapping client cohort row.
 
-- [ ] **Step 3: Implement the responsive rules**
+- [x] **Step 3: Implement the responsive rules**
 
 In `src/app/theme.css`:
 
@@ -164,7 +164,7 @@ In `src/app/theme.css`:
 - Add a portrait rule at `@media (max-width: 600px) and (max-aspect-ratio: 3/4)` that allows the HUD to scroll vertically, keeps plan text wrapping, and lets the six transparent cohort items wrap into two rows without horizontal overflow.
 - Preserve the current 982×319 information hierarchy and advisor styles.
 
-- [ ] **Step 4: Run the UI test and verify GREEN**
+- [x] **Step 4: Run the UI test and verify GREEN**
 
 Run:
 
@@ -185,7 +185,7 @@ Expected: all Frontier and UI source-contract assertions pass.
 - Consumes: `MOUNTAIN_WORLD_SIZE` and `positionWorld.x/z`.
 - Produces: `opacityNode` on `buildTerrainColorNode(data)` and a transparent, depth-writing material with a small alpha cutoff.
 
-- [ ] **Step 1: Add the failing graph contract**
+- [x] **Step 1: Add the failing graph contract**
 
 ```js
 import { buildTerrainColorNode } from './mountain/terrainColor.ts';
@@ -198,7 +198,7 @@ const graph = buildTerrainColorNode({
 assert.ok(graph.opacityNode, 'terrain graph exposes boundary opacity');
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -208,7 +208,7 @@ npm run test:framing
 
 Expected: FAIL because the production graph has no `opacityNode`.
 
-- [ ] **Step 3: Implement the production fade**
+- [x] **Step 3: Implement the production fade**
 
 Build the edge opacity from the distance to the nearest square boundary:
 
@@ -223,7 +223,7 @@ const opacityNode = smoothstep(0, edgeFadeWidth, edgeDistance);
 
 Return `opacityNode` from `buildTerrainColorNode`. In `TerrainMesh`, set `m.opacityNode`, `m.transparent = true`, keep `m.depthWrite = true`, and set a small `m.alphaTest` cutoff so only the outermost nearly invisible edge is discarded. Do not duplicate or replace the terrain graph in the probe.
 
-- [ ] **Step 4: Run focused tests and the real Viz5 Tint probe**
+- [x] **Step 4: Run focused tests and the real Viz5 Tint probe**
 
 Run:
 
@@ -243,7 +243,7 @@ Expected: focused assertions pass; Viz5 reports a completed probe with zero erro
 - Consumes: the complete implementation and approved viewport matrix.
 - Produces: current verification evidence and an explicit record that frozen quantitative contracts stayed untouched.
 
-- [ ] **Step 1: Run the repository release gate**
+- [x] **Step 1: Run the repository release gate**
 
 ```powershell
 npx tsc -b
@@ -264,7 +264,7 @@ node probe/run-viz5-probe.mjs
 
 Expected: every command exits zero. Report environmental limitations separately from product defects.
 
-- [ ] **Step 2: Perform read-only browser review**
+- [x] **Step 2: Perform read-only browser review**
 
 Review `982×800`, `982×443`, `982×319`, `390×844`, and `255×542`.
 
@@ -277,11 +277,11 @@ For each viewport confirm:
 - Portrait plan text wraps and all six cohorts reflow without horizontal overflow.
 - Visible client elements do not intersect or clip.
 
-- [ ] **Step 3: Update the repository handoff**
+- [x] **Step 3: Update the repository handoff**
 
 Add a dated `MEMORY.md` entry recording the source paths changed, viewport results, exact verification commands, the camera-fit margin (`1.12`), terrain fade width (`1.75` world units), and that simulation/store/worker/buffer/statistical contracts were untouched.
 
-- [ ] **Step 4: Review the final diff**
+- [x] **Step 4: Review the final diff**
 
 Run:
 

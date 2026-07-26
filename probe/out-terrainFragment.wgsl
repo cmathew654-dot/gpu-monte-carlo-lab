@@ -12,8 +12,8 @@ struct OutputStruct {
 var<private> output : OutputStruct;
 
 // uniforms
-@binding( 1 ) @group( 1 ) var nodeUniform14_sampler : sampler;
-@binding( 2 ) @group( 1 ) var nodeUniform14 : texture_2d<f32>;
+@binding( 1 ) @group( 1 ) var nodeUniform16_sampler : sampler;
+@binding( 2 ) @group( 1 ) var nodeUniform16 : texture_2d<f32>;
 
 struct objectStruct {
 	nodeUniform0 : mat4x4<f32>,
@@ -23,7 +23,9 @@ struct objectStruct {
 	nodeUniform5 : mat3x3<f32>,
 	nodeUniform7 : f32,
 	nodeUniform8 : f32,
-	nodeUniform9 : f32
+	nodeUniform9 : f32,
+	nodeUniform10 : f32,
+	nodeUniform11 : f32
 };
 @binding( 0 ) @group( 1 )
 var<uniform> object : objectStruct;
@@ -31,10 +33,10 @@ var<uniform> object : objectStruct;
 struct renderStruct {
 	cameraProjectionMatrix : mat4x4<f32>,
 	cameraViewMatrix : mat4x4<f32>,
-	nodeUniform10 : vec3<f32>,
+	nodeUniform12 : vec3<f32>,
+	nodeUniform15 : vec3<f32>,
 	nodeUniform13 : vec3<f32>,
-	nodeUniform11 : vec3<f32>,
-	nodeUniform12 : vec3<f32>
+	nodeUniform14 : vec3<f32>
 };
 @binding( 0 ) @group( 0 )
 var<uniform> render : renderStruct;
@@ -436,26 +438,33 @@ fn main( @location( 0 ) v_positionWorld : vec3<f32>,
 	nodeVar0 = ( smoothstep( object.nodeUniform2, object.nodeUniform3, v_positionWorld.y ) * smoothstep( 0.45, 0.72, normalWorld.y ) );
 	nodeVar1 = ( ( pow( max( ( ( mx_perlin_noise_float_1( ( v_positionWorld * vec3<f32>( 38.0 ) ) ) * 1.0 ) + 0.0 ), 0.0 ), 8.0 ) * 0.35 ) * nodeVar0 );
 	DiffuseColor = vec4<f32>( ( mix( mix( vec3<f32>( 0.012286488353353374, 0.023153366173251363, 0.057805430183792694 ), vec3<f32>( 0.06847816983662762, 0.11443537381770343, 0.24620132669705552 ), pow( clamp( ( v_positionWorld.y / object.nodeUniform1 ), 0.0, 1.0 ), 0.8 ) ), vec3<f32>( 0.6866853124288864, 0.775822218312646, 0.9046611743890203 ), nodeVar0 ) + vec3<f32>( nodeVar1 ) ), 1.0 );
-	DiffuseColor.w = ( DiffuseColor.w * object.nodeUniform7 );
-	DiffuseColor.w = 1.0;
-	Metalness = object.nodeUniform8;
+	DiffuseColor.w = ( DiffuseColor.w * smoothstep( 0.0, object.nodeUniform7, ( object.nodeUniform8 - max( abs( v_positionWorld.x ), abs( v_positionWorld.z ) ) ) ) );
+
+	if ( ( DiffuseColor.w <= object.nodeUniform9 ) ) {
+
+		discard;
+
+
+	}
+
+	Metalness = object.nodeUniform10;
 	nodeVar2 = max( abs( dpdx( normalViewGeometry ) ), abs( - dpdy( normalViewGeometry ) ) );
-	Roughness = min( ( max( object.nodeUniform9, 0.0525 ) + max( max( nodeVar2.x, nodeVar2.y ), nodeVar2.z ) ), 1.0 );
+	Roughness = min( ( max( object.nodeUniform11, 0.0525 ) + max( max( nodeVar2.x, nodeVar2.y ), nodeVar2.z ) ), 1.0 );
 	SpecularColor = vec3<f32>( 0.04, 0.04, 0.04 );
 	SpecularColorBlended = mix( vec3<f32>( 0.04, 0.04, 0.04 ), DiffuseColor.xyz, Metalness );
 	SpecularF90 = 1.0;
-	DiffuseContribution = ( DiffuseColor.xyz * vec3<f32>( ( 1.0 - object.nodeUniform8 ) ) );
+	DiffuseContribution = ( DiffuseColor.xyz * vec3<f32>( ( 1.0 - object.nodeUniform10 ) ) );
 	EmissiveColor = ( ( ( vec3<f32>( 0.6866853124288864, 0.775822218312646, 0.9046611743890203 ) * vec3<f32>( nodeVar0 ) ) * vec3<f32>( 0.085 ) ) + vec3<f32>( ( nodeVar1 * 0.5 ) ) );
 	irradiance = vec3<f32>( 0.0, 0.0, 0.0 );
-	nodeVar3 = ( irradiance + render.nodeUniform10 );
+	nodeVar3 = ( irradiance + render.nodeUniform12 );
 	irradiance = nodeVar3;
-	nodeVar4 = ( render.nodeUniform11 - render.nodeUniform12 );
+	nodeVar4 = ( render.nodeUniform13 - render.nodeUniform14 );
 	nodeVar5 = vec4<f32>( nodeVar4, 0.0 );
 	nodeVar6 = ( render.cameraViewMatrix * nodeVar5 );
 	nodeVar7 = normalize( nodeVar6.xyz );
 	nodeVar8 = nodeVar7;
 	nodeVar9 = dot( normalView, nodeVar8 );
-	nodeVar10 = ( vec3<f32>( clamp( nodeVar9, 0.0, 1.0 ) ) * render.nodeUniform13 );
+	nodeVar10 = ( vec3<f32>( clamp( nodeVar9, 0.0, 1.0 ) ) * render.nodeUniform15 );
 	nodeVar11 = nodeVar10;
 	directDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );
 	nodeVar12 = ( DiffuseContribution * vec3<f32>( 0.3183098861837907 ) );
@@ -468,8 +477,8 @@ fn main( @location( 0 ) v_positionWorld : vec3<f32>,
 	nodeVar16 = clamp( dot( positionViewDirection, nodeVar15 ), 0.0, 1.0 );
 	nodeVar17 = exp2( ( ( ( nodeVar16 * -5.55473 ) - 6.98316 ) * nodeVar16 ) );
 	nodeVar18 = ( Roughness * Roughness );
-	nodeVar19 = textureSample( nodeUniform14, nodeUniform14_sampler, vec2<f32>( Roughness, clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) );
-	nodeVar20 = textureSample( nodeUniform14, nodeUniform14_sampler, vec2<f32>( Roughness, clamp( dot( normalView, nodeVar8 ), 0.0, 1.0 ) ) );
+	nodeVar19 = textureSample( nodeUniform16, nodeUniform16_sampler, vec2<f32>( Roughness, clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) );
+	nodeVar20 = textureSample( nodeUniform16, nodeUniform16_sampler, vec2<f32>( Roughness, clamp( dot( normalView, nodeVar8 ), 0.0, 1.0 ) ) );
 	nodeVar21 = ( SpecularColorBlended + ( ( vec3<f32>( 1.0 ) - SpecularColorBlended ) * vec3<f32>( 0.047619 ) ) );
 	nodeVar22 = ( 1.0 - ( nodeVar19.xy.x + nodeVar19.xy.y ) );
 	nodeVar23 = ( 1.0 - ( nodeVar20.xy.x + nodeVar20.xy.y ) );
@@ -488,7 +497,7 @@ fn main( @location( 0 ) v_positionWorld : vec3<f32>,
 	singleScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );
 	multiScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );
 	nodeVar31 = dot( normalView, positionViewDirection );
-	nodeVar32 = textureSample( nodeUniform14, nodeUniform14_sampler, vec2<f32>( Roughness, clamp( nodeVar31, 0.0, 1.0 ) ) );
+	nodeVar32 = textureSample( nodeUniform16, nodeUniform16_sampler, vec2<f32>( Roughness, clamp( nodeVar31, 0.0, 1.0 ) ) );
 	nodeVar33 = ( SpecularColor * vec3<f32>( nodeVar32.xy.x ) );
 	nodeVar34 = ( SpecularF90 * nodeVar32.xy.y );
 	nodeVar35 = ( nodeVar33 + vec3<f32>( nodeVar34 ) );
@@ -510,7 +519,7 @@ fn main( @location( 0 ) v_positionWorld : vec3<f32>,
 	nodeVar50 = ( multiScatteringDielectric + nodeVar49 );
 	multiScatteringDielectric = nodeVar50;
 	nodeVar51 = dot( normalView, positionViewDirection );
-	nodeVar52 = textureSample( nodeUniform14, nodeUniform14_sampler, vec2<f32>( Roughness, clamp( nodeVar51, 0.0, 1.0 ) ) );
+	nodeVar52 = textureSample( nodeUniform16, nodeUniform16_sampler, vec2<f32>( Roughness, clamp( nodeVar51, 0.0, 1.0 ) ) );
 	nodeVar53 = ( DiffuseColor.xyz * vec3<f32>( nodeVar52.xy.x ) );
 	nodeVar54 = ( SpecularF90 * nodeVar52.xy.y );
 	nodeVar55 = ( nodeVar53 + vec3<f32>( nodeVar54 ) );

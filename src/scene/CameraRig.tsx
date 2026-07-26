@@ -22,7 +22,12 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useSimStore } from '../store/simStore';
-import { getTerrainStatus, getTerrainSummitY } from './mountain/terrain';
+import { mountainFitRadius } from './cameraFit';
+import {
+  getTerrainStatus,
+  getTerrainSummitY,
+  MOUNTAIN_WORLD_SIZE,
+} from './mountain/terrain';
 
 /** Orbital drift speed (rad/s): full revolution in ~90 s. */
 const DRIFT_SPEED = 0.07;
@@ -87,6 +92,7 @@ export function CameraRig() {
     let targetY: number;
     let azimuth: number;
     let elevation: number;
+    let effectiveRadius = radius.current;
     if (mountain) {
       radius.current = Math.min(
         Math.max(radius.current, MOUNTAIN_RADIUS_MIN),
@@ -97,8 +103,18 @@ export function CameraRig() {
           MOUNTAIN_SWAY_AMPLITUDE +
         parallax.current.x;
       elevation = MOUNTAIN_ELEVATION + parallax.current.y * 0.5;
+      if ('isPerspectiveCamera' in camera) {
+        effectiveRadius = mountainFitRadius(
+          radius.current,
+          MOUNTAIN_WORLD_SIZE * 0.5,
+          camera.fov,
+          camera.aspect,
+        );
+      } else {
+        effectiveRadius = radius.current;
+      }
       targetX = 0;
-      targetY = getTerrainSummitY() * 0.52;
+      targetY = getTerrainSummitY() * 0.60;
     } else {
       azimuth = client
         ? Math.sin(clock.elapsedTime * CLIENT_SWAY_SPEED) *
@@ -116,7 +132,7 @@ export function CameraRig() {
       targetY = slide * TAIL_TARGET_Y;
     }
 
-    const r = radius.current;
+    const r = effectiveRadius;
     camera.position.set(
       targetX + r * Math.cos(elevation) * Math.sin(azimuth),
       targetY + r * Math.sin(elevation),
