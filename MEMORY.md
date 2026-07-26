@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:832b7e0 + A5 Task 5 working tree
+verified_against: git:61a0c0f + final documentation
 review_by: 2026-08-09
 ---
 
@@ -109,6 +109,41 @@ Mutable operational handoff only.
   modules in 5.73s. This is focused A5 experience evidence; it is not a claim
   that the full baseline was rerun.
 - Next action: begin Amendment A6 Regime-t lens work.
+
+### C-006 — Amendment A6: Regime-t and four-model Robustness Frontier
+
+- Status: completed; canonical integration and deployment pending.
+- Outcome sought: extend the tested spending frontier with one orthogonal,
+  CFA-defensible persistence lens without changing any frozen primary model,
+  model ID, buffer, worker protocol, store shape, or financial operation order.
+- Accepted model: a two-state bivariate Student-t(5) scale HMM with one common
+  mean and covariance shape, persistent state-specific scales, and paired
+  equity/bond innovations. The initially planned unconstrained HMM was rejected
+  by the unchanged 1.5× volatility-separation gate rather than rationalized.
+- Calibration evidence: 1,206 paired months, 1926-01 through 2026-06, digest
+  `22cce814073cdf5fba6288afbdf7d4c78d000a7f62110c757905eb3076cc49e4`;
+  calm/stress monthly equity volatility 0.0330749726 / 0.0617423330;
+  persistence 0.9767339270 / 0.9542764748; four agreeing starts; rolling
+  score 4.3010423089 versus 4.2562176532 for the one-state comparator.
+- Production sequence: `gbm → bootstrap → fattail → regime`; complete-set
+  publication only; selected primary GPU simulation restored on success,
+  failure, and abort. Regime-t remains frontier-only and ignores μ/σ.
+- Fixed validation result: current success 0.5149 / 0.6031 / 0.5158 / 0.6491;
+  90% capacities 3632.8125 / 3476.5625 / 3632.8125 / 3984.375 dollars per
+  month; robust floor 3476.5625; all searches converged on real tested points
+  with zero upward reversal. Latest-filtered versus stationary Regime-t
+  success was 0.6491 versus 0.6468.
+- GPU evidence: the production graph compiles through Tint with no new binding;
+  the first 16 state values match CPU exactly. Physical-GPU performance remains
+  unmeasured.
+- Visual evidence: final CPU-fallback screenshots pass at 1920×1080 and
+  720×900 after fixing nested flex shrinkage, client/Gauntlet overlap, idle
+  bounds/copy, and collision-proof four-model label lanes.
+- Verified outcome: the complete release-candidate gate in
+  `validation/REPORT.md` passed after `61a0c0f`. The exact frozen-surface diff
+  from A5 head `2bade36` is empty.
+- Next action: fast-forward canonical `master`, publish the validated static
+  bundle, insert the production URL in README, and record the deployed commit.
 
 ## Verified imported state
 

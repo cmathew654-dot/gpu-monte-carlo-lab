@@ -447,3 +447,112 @@ frozen declarations were changed.
 Physical-GPU frontier wall time is unmeasured; the SwiftShader compute probe
 validates production graph compilation and binding correctness, not hardware
 performance.
+
+---
+
+## Amendment A6 — Regime-t and four-model frontier (2026-07-26)
+
+**Measured base commits:** `a6b6157`, `9a606db`, `2aa9398`, and `409260f`.
+
+### Calibration and acceptance evidence
+
+The deterministic calibration recovered **1,206 paired monthly observations**
+from **1926-01 through 2026-06**. The recovered input digest was
+`22cce814073cdf5fba6288afbdf7d4c78d000a7f62110c757905eb3076cc49e4`.
+The fitted model is a two-state bivariate Student-t(5) scale HMM with one
+common mean and one common covariance shape. The states change scale, not
+correlation; the model does not claim state-dependent expected returns or a
+changing equity-bond correlation.
+
+| Measured quantity | Calm | Stress |
+| --- | ---: | ---: |
+| Monthly equity volatility | 0.033074972584702475 | 0.0617423329910754 |
+| Filtered occupancy | 0.6608096493480315 | 0.3391903506519681 |
+| Persistence | 0.9767339270462951 | 0.9542764747550557 |
+| Expected duration, months | 42.98103947278997 | 21.87057963363338 |
+| Latest-filtered probability, 2026-06 | 0.9462876300562548 | 0.053712369943745224 |
+
+The stress/calm equity-volatility ratio was **1.8667387504**. The winning fit
+converged after **31 iterations** at log likelihood
+**5567.2778149120395**, and all **4 of 4** ordered deterministic starts agreed
+within the acceptance tolerance. Rolling-origin validation scored **606**
+months: the two-state mean joint log score was **4.301042308938607**, versus
+**4.25621765324095** for the one-state Student-t(5) comparator. The committed
+artifact passed the positive covariance/Cholesky, minimum 10% occupancy,
+minimum 1.5× volatility separation, bounded transition, persistent-state,
+convergence, agreeing-start, and rolling-score acceptance gates.
+
+Production initializes month zero from the **latest-filtered** 2026-06 state
+probability. Stationary initialization is validation-only sensitivity, not a
+second displayed model or a market call.
+
+### Fixed four-model frontier fixture
+
+The repeatable CPU fixture used **10,000 paths and seed 42**. All four models
+used the same committed financial inputs and were evaluated in the order
+`gbm`, `bootstrap`, `fattail`, `regime`.
+
+| Model | Current success | P50 terminal wealth | Worst-decile DD | Tested 90% capacity | Capacity success | Evaluations |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| GBM | 0.5149 | 35653.861328125 | 100% | 3632.8125 | 0.9026 | 10 |
+| Historical bootstrap | 0.6031 | 354621.578125 | 100% | 3476.5625 | 0.9044 | 10 |
+| Student-t(5) | 0.5158 | 38734.970703125 | 100% | 3632.8125 | 0.9049 | 10 |
+| Regime-t, latest-filtered | 0.6491 | 413119.59375 | 100% | 3984.375 | 0.9046 | 9 |
+
+Every capacity was an actually evaluated point and every search converged.
+The maximum upward reversal was **zero for all four measured curves**. Robust
+monthly spending was **3476.5625**, set by historical bootstrap as the minimum
+complete-set capacity.
+
+Regime-t was **more optimistic**, not more pessimistic, on this fixture: it had
+the highest current success, P50 terminal wealth, and tested capacity. This is
+reported without relabeling persistence as stress. At the same time, the
+worst-decile drawdown metric saturated at **100% for every model**, so that
+column did not differentiate the four candidates.
+
+The initialization sensitivity was small but nonzero: latest-filtered success
+was **0.6491**, versus **0.6468** under stationary initialization. The
+application publishes only the latest-filtered result.
+
+### GPU evidence and remaining limitation
+
+The production Regime-t TSL graph compiled through SwiftShader/Tint. Its first
+16 month-zero state values were
+`0,0,1,0,0,0,0,1,0,0,0,1,0,0,1,0`, exactly matching the CPU mirror. This is
+real-graph compilation and first-16 state parity evidence. **Physical-GPU
+Regime-t and four-model-frontier performance remains unmeasured.**
+
+### Final integrated release-candidate gate
+
+The complete gate was rerun on 2026-07-26 after the responsive Frontier fix
+at `61a0c0f`. Every command exited zero:
+
+| Command | Fresh result |
+| --- | --- |
+| `npx tsc -b` | pass |
+| `npm run lint` | pass |
+| `npm run test:sim` | 84 passed, 0 failed |
+| `npm run test:stats` | 52 passed, 0 failed; snapStats 19 passed |
+| `npm run test:gauntlet` | 26 passed, 0 failed; gauntletViz 38 passed |
+| `npm run test:validate` | 56 passed, 0 failed |
+| `npm run test:probe-launcher` | 8 passed, 0 failed |
+| `npm run test:triangulation` | 5 passed; triStats store 5 passed |
+| `npm run test:frontier` | complete focused suite pass; CPU frontier 8 passed |
+| `npm run test:regime` | series 26, HMM 27, runtime 44 passed; artifact reproducible |
+| `npm run test:frontier-validate` | stable four-model result and initialization sensitivity reproduced |
+| `npm run build` | 157 modules transformed; production build completed |
+| `npm run test:compute-probe` | 7 checks passed; Regime-t state parity exact; zero probe errors |
+| `node probe/run-viz5-probe.mjs` | 194 routes; all five production graph pairs compiled; zero probe errors |
+
+The frozen A6 surface audit was also empty:
+
+```text
+git diff --exit-code 2bade36 -- src/store/simStore.ts src/ui/cpuSim.worker.ts src/sim/fallback/cpuSim.ts src/sim/runSimulation.ts src/sim/kernels/initPaths.tsl.ts src/sim/kernels/stepPaths.tsl.ts src/sim/buffers.ts
+```
+
+Final CPU-fallback visual verification passed at 1920×1080 and 720×900.
+The completed Frontier scrolls as one analysis surface, both full tables remain
+readable, all four direct-label lanes are distinct, the client robust-spend
+sentence does not overlap the Gauntlet, and the idle state says four-model.
+SwiftShader still cannot verify the WebGPU terrain scene or physical-device
+performance; those limitations remain unchanged.

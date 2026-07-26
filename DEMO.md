@@ -1,10 +1,10 @@
 # DEMO.md — Five Client Conversations with the GPU Monte Carlo Lab
 
-**For the advisor.** No statistics background needed. Every number below was
-produced by the actual simulation engine (100,000-path CPU reference run of each
-preset, seed 42; on the GPU at 1M paths the same numbers land within ~±0.2pp).
-If the screen in front of you shows something slightly different in the last
-decimal, that's the simulation being honest, not broken.
+**For the advisor.** No statistics background needed. Every preset number below
+was produced by the actual 100,000-path CPU reference engine with seed 42.
+Robustness Frontier evidence uses its disclosed 10,000-path analysis basis with
+the same seed. Physical-GPU parity and timing remain an explicit measurement
+protocol, not a published performance claim.
 
 **How to read the screen (10-second version for you, not the client):**
 the glowing cone is 100,000+ simulated futures of the client's money, fanning
@@ -14,10 +14,11 @@ futures where the money ran out. The right rail reads the same simulation:
 **worst-decile drawdown**, **safe withdrawal rate**, **median failure year**.
 
 **Universal moves used below:** presets load from the scenario picker; sliders
-withdrawal / contribution / allocation / μ / σ update the sim live (~1 frame on
-GPU); the **CALC SAFE WR** button computes the monthly spending that history
-would have supported 90% of the time; switching the return model
-(Bootstrap ↔ GBM ↔ Fat-tail) swaps the market engine under the same plan.
+change the committed plan; the **CALC SAFE WR** button computes the monthly
+spending the selected engine supported at the 90% target; switching
+**Bootstrap ↔ GBM ↔ Fat-tail** changes the primary market engine. In advisor
+view, **Robustness Frontier** runs those three engines plus the separate
+Regime-t lens and shows where the answer depends on the model.
 
 ---
 
@@ -71,43 +72,55 @@ worst-decile drawdown **90.6%** — the conditional mean of the deepest 10%.
 1. Raise the contribution and read the newly computed range rather than a memorized point estimate.
 2. Compare the 90→60 glidepath with a flat allocation; the triangulation card separates model disagreement from plan choices.
 
-**The one insight:** *De-risking into retirement didn't change this plan's
-survival odds — it changed what you give up and how bumpy it feels. Keeping
-90% stocks doubles the median legacy but asks for nerves through 27%
-drawdowns. And if you want more safety, $1,000/month more saving does more
-than any allocation tweak.*
+**The one insight:** *The glidepath is not a free safety switch. It changes the
+trade-off among survival, ending wealth, and drawdown. Read those three outputs
+together, then compare a contribution change with an allocation change on the
+current engine rather than relying on a memorized rule.*
 
 ---
 
-## Scenario 3 — "Fat-tail stress": *"Markets always come back… right?"*
+## Scenario 3 — "Robustness Frontier": *Which answer survives the assumptions?*
 
-**The client:** Prudent plan — $1.25M, $4,200/month (a textbook 4.0% rate),
-30 years — but skeptical of crash risk, or convinced Gaussian models hide it.
+**The plan:** $1.0M today, $2,000/month contributions, $5,000/month real
+spending, 30 years, and an 80%→60% equity glidepath. This is the fixed
+validation fixture: 10,000 paths per model, seed 42.
 
-**Setup (clicks):** Preset picker → **"Fat-tail stress"**. Then toggle the
-return model between **Bootstrap**, **GBM**, and **Fat-tail** — same plan,
-three engines.
+**Setup (clicks):** Advisor view → **Robustness Frontier** → **RUN 4-MODEL
+ANALYSIS**. The primary model remains the one selected in the controls; the
+analysis evaluates GBM, historical bootstrap, Student-t(5), and Regime-t on
+the same captured plan and seed.
 
 **What to say:**
-> "Let's run your exact plan through three different versions of how markets
-> behave, and see which assumption actually matters."
+> "A success percentage is not the answer. It is an answer conditional on a
+> market model. Let's find the spending level that survives all four lenses."
 
-**What the client sees (real measured numbers):**
+**What the advisor sees (measured production evidence):**
 
-| Engine | Success | Median outcome | P95 | Worst-decile DD | Median failure |
-|---|---|---|---|---|---|
-| GBM (smooth Gaussian) | 90.7% | $2.93M | $17.4M | 31.7% | yr 23.7 |
-| Fat-tail (crash-prone months) | 90.7% | $2.93M | $17.2M | 31.0% | yr 23.8 |
-| Bootstrap (real history, whole years replayed) | 89.1% | $4.72M | $37.8M | 36.5% | yr 21.4 |
+| Lens | Current-plan success | 90% monthly capacity |
+|---|---:|---:|
+| GBM | 51.49% | $3,632.81 |
+| Historical bootstrap | 60.31% | $3,476.56 |
+| Student-t(5) | 51.58% | $3,632.81 |
+| Regime-t | 64.91% | $3,984.38 |
 
-**The one insight (this is the meeting's "wow"):** *Making individual months
-more crash-prone barely moves a 30-year plan — over 360 months, wild months
-average out. What actually threatens you isn't the shape of one bad month;
-it's bad years that come in clusters — the Depression, the 1970s. That's why
-the historical engine shows a deeper worst case (36.5% drawdown) even though
-it also shows the richest upside. Crash-shape risk is overrated; sequence
-risk is the real enemy — and that's what your withdrawal strategy insures
-against.*
+The current plan spans **51.49%–64.91%**, a **13.42 percentage-point** model
+range. The robust floor is the minimum tested 90% capacity: **$3,476.56 per
+month**, set by historical bootstrap in this fixture. Every capacity is an
+actually evaluated curve point within the declared 90% ±0.5pp tolerance.
+
+**The honest interpretation:** Regime-t is the most optimistic lens here. It
+is not a hidden "stress case" and it is not a recommendation. It adds persistent
+calm/stress volatility with joint equity-bond Student-t innovations calibrated
+to 1,206 real months through 2026-06; it deliberately ignores the μ/σ sliders.
+Its two states share one mean and covariance shape, so this version does **not**
+claim that equity-bond correlation changes across regimes.
+
+**The one insight:** *The model ranking is less important than the decision
+boundary. At $5,000/month every lens dislikes the plan, but they disagree by
+13.42 points about how much. The spending curve turns that disagreement into an
+actionable question: what monthly commitment clears the 90% bar under every
+tested assumption? Here, the answer is $3,476.56 — not because one model is
+"right," but because that is the lowest capacity any of the four measured.*
 
 ---
 
@@ -159,12 +172,10 @@ entirely above zero.
 
 **The move:** change the contribution and read the new distribution directly; the current engine owns every displayed number.
 
-**The one insight:** *Thirty years out, the difference between luck and no
-luck is the difference between $646.6k and $7.976M — but the difference between
-$750 and $3,000 a month is the difference between $1.2M and $4.2M* at the
-median. *You can't control which market history you live through. You can
-almost completely control the contribution. Time in the market, fed steadily,
-beats timing the market.*
+**The one insight:** *Thirty years out, the same saving habit spans $646.6k to
+$7.976M across the measured distribution. You cannot control which market
+history arrives; contribution is the lever you can change. Move it on screen
+and let the current engine quantify the new range.*
 
 ---
 
@@ -174,12 +185,18 @@ beats timing the market.*
   Changing the seed re-rolls the 100k futures; at 100k paths the success rate
   moves by ≲0.4pp between seeds. If a client asks "will I get the same answer
   tomorrow?" — yes; show them the seed field and re-run it.
-- **Run fat-tail demos at 100k+ paths:** at the 10k CPU fallback, tail stats
-  carry ±5% estimator noise on medians (measured; REPORT.md FINDING-2). The
-  GPU's 1M paths is not a luxury for this scenario — it's the point.
+- **Separate precision from honesty:** normal simulation can use 100k or 1M
+  paths on WebGPU. The Frontier intentionally discloses its own 10k CPU basis
+  in fallback mode; its capacities are tested curve points, not interpolated
+  promises.
 - **If the badge says CPU mode:** you're on a non-WebGPU browser; everything
-  above still works at 10,000 paths (stats within ~1pp), the cone is the one
-  thing that's missing. Demo scenarios 1–5 are fully valid in CPU mode.
+  above still works on the disclosed 10,000-path basis, with more estimator
+  noise than the larger GPU runs; the cone is the one thing that's missing.
+  Demo scenarios 1–5 are fully usable in CPU mode.
+- **Regime-t is a fourth lens, not a fourth primary control:** it appears only
+  in Robustness Frontier, is calibrated through 2026-06, and ignores μ/σ.
+  Do not describe it as necessarily conservative; in the fixed fixture it is
+  the most optimistic model.
 - **Calibration defense:** every default (μ=7%, σ=15%, block length 12, ν=5,
   the 6%-withdrawal opening screen) is justified against the underlying
   Shiller dataset in `docs/calibration.md` — the page to open if a client
