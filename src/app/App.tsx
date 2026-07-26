@@ -19,6 +19,7 @@ import { GauntletDriver, GauntletPanel } from '../ui/GauntletPanel';
 import { PlayheadHud } from '../ui/PlayheadHud';
 import { PresentationOverlay } from '../ui/PresentationOverlay';
 import { ReadThisCaption } from '../ui/ReadThisCaption';
+import { RobustnessFrontierPanel } from '../ui/RobustnessFrontierPanel';
 import { StatCards } from '../ui/StatCards';
 import { SwrButton } from '../ui/SwrButton';
 import { useFrontierStore } from '../store/frontierStore';
@@ -44,6 +45,7 @@ export default function App() {
   const toggleViewMode = useSimStore((s) => s.toggleViewMode);
   const advisorLens = useFrontierStore((s) => s.advisorLens);
   const showFutures = viewMode === 'advisor' && advisorLens === 'futures';
+  const showFrontier = viewMode === 'advisor' && advisorLens === 'frontier';
   const showGauntlet = viewMode === 'advisor' && advisorLens === 'gauntlet';
   const showLegacyAdvisorData = showFutures || showGauntlet;
 
@@ -164,11 +166,7 @@ export default function App() {
             className="advisor-lens-panel"
             hidden={advisorLens !== 'frontier'}
           >
-            {advisorLens === 'frontier' && (
-              <p className="advisor-lens-panel__placeholder">
-                Robustness frontier analysis has not been run for this plan.
-              </p>
-            )}
+            {showFrontier && <RobustnessFrontierPanel />}
           </section>
           <section
             id="advisor-lens-panel-gauntlet"
