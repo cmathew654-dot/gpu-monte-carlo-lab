@@ -211,13 +211,13 @@ export function useCpuSim(): CpuSimStatus {
       try {
         const base = await runJob(params);
         if (disposed || token !== tokenRef.current) return;
-        const outcomes = new Map<ShippedModelKey, ModelOutcome>();
-        outcomes.set(params.model, outcomeFromWorker(params.model, base));
         setStats(base.stats);
         // AMENDMENT A3: magnitude-of-failure metrics ride the same message.
         setMagnitudeStats(base.magnitude ?? null);
         setStatus({ elapsedMs: base.elapsedMs, error: null });
 
+        const outcomes = new Map<ShippedModelKey, ModelOutcome>();
+        outcomes.set(params.model, outcomeFromWorker(params.model, base));
         const successRates: TriStats['successRates'] = {
           gbm: 0,
           bootstrap: 0,
