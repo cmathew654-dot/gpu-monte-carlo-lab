@@ -1,6 +1,7 @@
 # Wave 2 Execution Plan
 
-Status: base verified at `36e428d`; implementation not started.
+Status: W2-A and W2-B implemented, independently verified, merged at `f5a9ebb`,
+and combined full gate green. Wave 3 documentation/deployment remains.
 
 ## Base preparation
 
@@ -87,8 +88,8 @@ wealth-height visual language as stochastic trails.
 
 ## Integration and Wave 3
 
-- Merge in an integration worktree.
-- Run the full gate again.
+- [x] Merge in an integration worktree.
+- [x] Run the full gate again.
 - Move completed plans into `docs/exec-plans/completed/`.
 - Promote triangulation, gauntlet, and magnitude from roadmap to feature
   sections with current measured numbers.

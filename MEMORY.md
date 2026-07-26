@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:36e428d
+verified_against: git:f5a9ebb
 review_by: 2026-08-09
 ---
 
@@ -36,24 +36,27 @@ Mutable operational handoff only.
 
 ### C-002 — Wave 2A: model triangulation
 
-- Status: planned; not implemented
+- Status: completed
 - Outcome sought: committed parameter changes run all three return models with
   identical parameters and seed; primary model still drives paths and stats;
   client and advisor surfaces show assumption sensitivity.
 - Scope: stats purity/commit split, `SimDriver`, CPU fallback orchestration,
   additive `triStats`, `StatCards`, `ClientHud`, device-loss fallback, docs.
-- Done when: requirements in the active Wave-2 plan pass the full gate on its
-  own branch.
+- Verified outcome: committed as `3d7964b`, merged into integration at
+  `f5a9ebb`; focused triangulation suites pass 5 + 5 checks and the combined
+  full gate remains green.
 
 ### C-003 — Wave 2B: historical gauntlet visualization
 
-- Status: planned; replay engine already exists
+- Status: completed
 - Outcome sought: deterministic six-cohort HUD/table plus Rainier cohort trails,
   driven by a dedicated zustand store and the shared reveal sweep.
 - Scope: gauntlet engine path output, store, UI panel, buffers, TSL graph,
   mountain rendering, real-builder probe coverage.
-- Done when: requirements in the active Wave-2 plan pass the full gate on its
-  own branch.
+- Verified outcome: implemented in `752f812`, correctness review fixes in
+  `9b66419`, merged into integration at `f5a9ebb`; engine + visualization
+  suites pass 26 + 38 checks and the real gauntlet graph compiles through
+  Tint at 5,687/869-byte WGSL with zero validation errors.
 
 ## Verified imported state
 
@@ -85,7 +88,23 @@ commit `7398c71`, but that SHA cannot be verified from the archive itself.
 | `node probe/run-viz5-probe.mjs` | pass | 194 routes, zero missing summits, eight WGSL outputs, zero probe errors |
 | `npm audit --omit=dev --json` | 0 production vulnerabilities | local registry audit, 2026-07-26 |
 
-The full baseline is green at `36e428d`. Re-run it after every branch merge.
+The full combined Wave-2 baseline is green at `f5a9ebb`. Re-run it after every
+subsequent branch merge.
+
+### Wave 2 integration evidence
+
+| Check | Result | Evidence |
+|---|---:|---|
+| `npx tsc -b` | pass | integration worktree, 2026-07-26 |
+| `npm run lint` | pass | integration worktree, 2026-07-26 |
+| `npm run test:sim` | 84 pass | integration worktree, 2026-07-26 |
+| `npm run test:stats` | 52 + 19 pass | integration worktree, 2026-07-26 |
+| `npm run test:gauntlet` | 26 + 38 pass | integration worktree, 2026-07-26 |
+| `npm run test:triangulation` | 5 + 5 pass | integration worktree, 2026-07-26 |
+| `npm run test:validate` | 56 pass | integration worktree, 2026-07-26 |
+| `npm run test:probe-launcher` | 6 pass | integration worktree, 2026-07-26 |
+| `npm run build` | pass | 136 modules, integration worktree, 2026-07-26 |
+| `node probe/run-viz5-probe.mjs` | pass | 194 routes; all five production graphs; zero errors |
 
 ### Validation numbers to use when refreshing `DEMO.md`
 
@@ -124,11 +143,10 @@ Full rationale: `docs/DECISIONS.md`.
 
 ## Future — not committed
 
-1. Execute W2-A on `p2-trig`; merge only after the full gate.
-2. Execute W2-B on `p2-gauntletviz`; merge only after the full gate.
-3. Run Wave-3 integration, update product evidence, deploy the static build, and
-   add the live URL/GIF.
-4. Measure real-hardware WebGPU performance before publishing frame-time claims.
+1. Run Wave 3: promote the shipped triangulation, failure-magnitude, and
+   historical-gauntlet layers into README feature sections.
+2. Deploy the verified static build and replace the live URL/GIF placeholder.
+3. Measure real-hardware WebGPU performance before publishing frame-time claims.
 
 The stretch goal to code-split GPU buffers in CPU mode remains optional; skip it
 if it makes frozen buffer initialization or Canvas ownership invasive.
