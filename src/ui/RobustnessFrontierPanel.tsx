@@ -215,7 +215,7 @@ export function RobustnessFrontierPanelView({
       {status === 'idle' && (
         <div className="frontier-panel__idle">
           <p>
-            Run an explicit three-model frontier analysis using up to 100,000 paths per model.
+            Run an explicit four-model frontier analysis using up to 100,000 paths per model.
             Opening this lens does not start the analysis.
           </p>
           <RunButton onRun={onRun} />

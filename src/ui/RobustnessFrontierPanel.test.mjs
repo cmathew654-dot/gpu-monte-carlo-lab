@@ -115,7 +115,9 @@ function render(overrides = {}) {
 
 const idleMarkup = render();
 assert.match(idleMarkup, /Run robustness frontier/);
+assert.match(idleMarkup, /explicit four-model frontier analysis/i);
 assert.match(idleMarkup, /up to 100,000 paths per model/i);
+assert.doesNotMatch(idleMarkup, /three-model/i);
 assert.doesNotMatch(idleMarkup, /Robust spend/);
 
 const runningMarkup = render({

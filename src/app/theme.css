@@ -1574,13 +1574,18 @@ select {
   min-width: 0;
   min-height: 0;
   padding: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   color: var(--summit-white);
   background: var(--panel-black);
   border: 1px solid var(--control-line);
   border-radius: 6px;
   scrollbar-color: var(--control-line) var(--panel-black);
+}
+
+.frontier-panel > * {
+  flex: 0 0 auto;
 }
 
 .frontier-panel:has(.frontier-panel__idle) {
@@ -1757,7 +1762,8 @@ select {
   min-width: 0;
   margin: 18px 24px 0;
   padding: 16px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--control-line);
   background: #080808;
   scrollbar-color: var(--control-line) #080808;
@@ -1828,6 +1834,12 @@ select {
   stroke-width: 1.5;
 }
 
+.frontier-chart__label-leader {
+  fill: none;
+  opacity: 0.72;
+  stroke-width: 1;
+}
+
 .frontier-chart__series--gbm .frontier-chart__direct-label {
   fill: var(--frontier-gbm);
 }
@@ -1896,7 +1908,8 @@ select {
 
 .frontier-chart__tested-points,
 .frontier-panel__comparison {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-color: var(--control-line) transparent;
 }
 
@@ -2116,6 +2129,16 @@ select {
     inset: 108px 12px 12px;
     max-height: none;
     padding: 13px 12px 10px;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 720px) {
+  .frontier-panel:has(.frontier-panel__idle) {
+    left: 316px;
+  }
+
+  .gauntlet-panel--client {
+    top: calc(9vh + 250px);
   }
 }
 

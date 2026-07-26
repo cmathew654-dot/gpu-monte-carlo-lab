@@ -27,7 +27,7 @@ const CHART = {
   width: 960,
   height: 420,
   left: 72,
-  right: 132,
+  right: 190,
   top: 32,
   bottom: 58,
 } as const;
@@ -210,7 +210,7 @@ export function FrontierChart({ result }: FrontierChartProps) {
             </text>
           </React.Fragment>
         )}
-        {series.map(({ model, points }) => {
+        {series.map(({ model, points }, seriesIndex) => {
           const style = MODEL_STYLE[model.model];
           const path = points
             .map(({ point }, index) => (index === 0 ? 'M ' : 'L ')
@@ -241,14 +241,24 @@ export function FrontierChart({ result }: FrontierChartProps) {
                 />
               ))}
               {endpoint && (
-                <text
-                  x={x(endpoint.point.monthlySpending) + 9}
-                  y={y(endpoint.point.successRate) - 8}
-                  fill={style.color}
-                  className="frontier-chart__direct-label"
-                >
-                  {FRONTIER_MODEL_LABELS[model.model]}
-                </text>
+                <React.Fragment>
+                  <line
+                    x1={x(endpoint.point.monthlySpending) + 5}
+                    y1={y(endpoint.point.successRate)}
+                    x2={CHART.width - CHART.right + 16}
+                    y2={CHART.top + 18 + seriesIndex * 24}
+                    stroke={style.color}
+                    className="frontier-chart__label-leader"
+                  />
+                  <text
+                    x={CHART.width - CHART.right + 22}
+                    y={CHART.top + 22 + seriesIndex * 24}
+                    fill={style.color}
+                    className="frontier-chart__direct-label"
+                  >
+                    {FRONTIER_MODEL_LABELS[model.model]}
+                  </text>
+                </React.Fragment>
               )}
             </g>
           );
