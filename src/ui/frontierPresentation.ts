@@ -127,7 +127,10 @@ export function clientRobustSpendSentence(frontier: RobustnessFrontier): string 
 export function capacityLabel(capacity: SpendingCapacity90): string {
   if (capacity.status === 'unbounded-high') return 'Above tested range';
   if (capacity.status === 'infeasible-at-zero') return 'Below 90% at $0/mo';
-  if (capacity.monthlySpending === null) return 'No measured capacity';
+  if (
+    capacity.monthlySpending === null
+    || !Number.isFinite(capacity.monthlySpending)
+  ) return 'No measured capacity';
   if (capacity.status === 'budget-exhausted') {
     return 'Best tested: ' + fmtUSD(capacity.monthlySpending) + '/mo real';
   }

@@ -147,6 +147,22 @@ assert.equal(
   capacityLabel({ ...converged, monthlySpending: null, status: 'unbounded-high' }),
   'Above tested range',
 );
+for (const status of ['converged', 'budget-exhausted']) {
+  for (const monthlySpending of [Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.equal(
+      capacityLabel({ ...converged, monthlySpending, status }),
+      'No measured capacity',
+    );
+  }
+}
+assert.equal(
+  capacityLabel({ ...converged, monthlySpending: Number.POSITIVE_INFINITY, status: 'unbounded-high' }),
+  'Above tested range',
+);
+assert.equal(
+  capacityLabel({ ...converged, monthlySpending: Number.NaN, status: 'infeasible-at-zero' }),
+  'Below 90% at $0/mo',
+);
 
 assert.match(
   clientRobustSpendSentence(frontier),
