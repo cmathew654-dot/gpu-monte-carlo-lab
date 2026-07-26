@@ -78,6 +78,9 @@ export function modelOutcome(
     ...stats
   } = computed.stats;
   const { computedAt: _magnitudeComputedAt, ...magnitude } = computed.magnitude;
+  void _safeWithdrawalRate;
+  void _statsComputedAt;
+  void _magnitudeComputedAt;
   return { model, stats, magnitude };
 }
 
