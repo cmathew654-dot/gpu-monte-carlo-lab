@@ -149,7 +149,14 @@ export async function computeRobustnessFrontier(
         });
       },
     });
+    throwIfAborted(options.signal);
+    if (modelResult.outcome.model !== runner.model) {
+      throw new Error(
+        `Frontier runner ${runner.model} returned outcome for ${modelResult.outcome.model}`,
+      );
+    }
     assertMonotoneCurve(modelResult.curve, options.analysisPathCount);
+    throwIfAborted(options.signal);
     models.push({
       model: runner.model,
       outcome: modelResult.outcome,
@@ -158,7 +165,11 @@ export async function computeRobustnessFrontier(
     });
   }
 
+  throwIfAborted(options.signal);
   const summary = robustSummary(models);
+  throwIfAborted(options.signal);
+  const computedAt = (options.now ?? Date.now)();
+  throwIfAborted(options.signal);
   return {
     basis: {
       params: capturedParams,
@@ -168,6 +179,6 @@ export async function computeRobustnessFrontier(
     },
     models,
     ...summary,
-    computedAt: (options.now ?? Date.now)(),
+    computedAt,
   };
 }
