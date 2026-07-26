@@ -77,8 +77,10 @@ Mutable operational handoff only.
 - Verified outcome: final gate from 9865bfe passes focused frontier tests,
   deterministic CPU frontier validation, TypeScript, lint, simulation, stats,
   gauntlet, baseline validation, launcher, triangulation, production build,
-  compute probe, and Viz5 probe. The measured seed-42, 10,000-path CPU result
-  is gbm 3632.8125 at 0.9026, bootstrap 3476.5625 at 0.9044, fattail
+  compute probe, and Viz5 probe. The deterministic artifact fixes logical time
+  at 2024-07-26T13:20:00.000Z (distinct from the 2026-07-26 wall-clock gate).
+  The measured seed-42, 10,000-path CPU result is gbm 3632.8125 at 0.9026,
+  bootstrap 3476.5625 at 0.9044, fattail
   3632.8125 at 0.9049; robust spending is 3476.5625/month, converged, in
   20899.61 ms. The full command matrix and JSON are in validation/REPORT.md.
 - Frozen surfaces: the exact diff from 56350f8 is empty for cpuSim.worker,
