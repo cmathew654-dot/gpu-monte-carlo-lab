@@ -32,7 +32,7 @@ Mutable operational handoff only.
   remains untouched.
 - Verified outcome: committed as `36e428d`; dependencies installed; full root
   gate and launcher regression test pass from this workspace.
-- Next action: create both Wave-2 branches from the final documented base.
+- Next action: begin W2-A on `p2-trig` and W2-B on `p2-gauntletviz`.
 
 ### C-002 — Wave 2A: model triangulation
 

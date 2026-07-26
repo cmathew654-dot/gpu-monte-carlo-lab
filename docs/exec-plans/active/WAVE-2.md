@@ -9,7 +9,7 @@ Status: base verified at `36e428d`; implementation not started.
 - [x] Fix only the cross-platform probe launcher necessary to reach the real Tint
   compile on Windows.
 - [x] Run and record the full baseline against the base commit.
-- [ ] Create `p2-trig` and `p2-gauntletviz` from the final documented base.
+- [x] Create `p2-trig` and `p2-gauntletviz` from the final documented base.
 
 ## W2-A — Model triangulation and failure magnitude
 
