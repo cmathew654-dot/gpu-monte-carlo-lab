@@ -19,6 +19,7 @@
  */
 import { create } from 'zustand';
 import type { ModelComparison } from '../sim/frontier/types';
+import { useFrontierStore } from './frontierStore';
 
 // ---------------------------------------------------------------------------
 // Frozen contract — SimParams (spec §4.1)
@@ -336,6 +337,26 @@ function normalizeParams(params: SimParams, mode: SimMode): SimParams {
   return { ...params, retireYear, pathCount };
 }
 
+function paramsEqual(left: SimParams, right: SimParams): boolean {
+  return (
+    left.model === right.model &&
+    left.pathCount === right.pathCount &&
+    left.horizonYears === right.horizonYears &&
+    left.retireYear === right.retireYear &&
+    left.initialWealth === right.initialWealth &&
+    left.contribution === right.contribution &&
+    left.withdrawal === right.withdrawal &&
+    left.mu === right.mu &&
+    left.sigma === right.sigma &&
+    left.seed === right.seed &&
+    (left.glidepath === right.glidepath ||
+      (left.glidepath !== null &&
+        right.glidepath !== null &&
+        left.glidepath.start === right.glidepath.start &&
+        left.glidepath.end === right.glidepath.end))
+  );
+}
+
 let commitTimer: ReturnType<typeof setTimeout> | null = null;
 
 function clearCommitTimer(): void {
@@ -360,15 +381,22 @@ export const useSimStore = create<SimState>()((set, get) => {
       commitTimer = null;
       const { params, committedParams, mode } = get();
       if (params === committedParams) return;
-      set({ committedParams: normalizeParams(params, mode) });
+      const nextCommittedParams = normalizeParams(params, mode);
+      set({ committedParams: nextCommittedParams });
+      if (!paramsEqual(nextCommittedParams, committedParams)) {
+        useFrontierStore.getState().clear();
+      }
     }, PARAM_COMMIT_DEBOUNCE_MS);
   };
 
   /** Shared path for discrete actions: merge + normalize + stale + commit now. */
   const applyNow = (partial: Partial<SimParams>) => {
     clearCommitTimer();
-    set((state) => {
-      const params = normalizeParams({ ...state.params, ...partial }, state.mode);
+    const state = get();
+    const nextParams = normalizeParams({ ...state.params, ...partial }, state.mode);
+    const shouldClearFrontier = !paramsEqual(nextParams, state.committedParams);
+    set((current) => {
+      const params = normalizeParams({ ...current.params, ...partial }, current.mode);
       return {
         params,
         committedParams: params,
@@ -377,6 +405,7 @@ export const useSimStore = create<SimState>()((set, get) => {
         modelComparison: null,
       };
     });
+    if (shouldClearFrontier) useFrontierStore.getState().clear();
   };
 
   return {
@@ -397,7 +426,12 @@ export const useSimStore = create<SimState>()((set, get) => {
       // Stamp computedAt at the store boundary so "last valid readback" is
       // defined identically for GPU readback and the CPU worker.
       set({ stats: { ...stats, computedAt: Date.now() }, isStale: false }),
-    setMode: (mode) =>
+    setMode: (mode) => {
+      const prior = get();
+      const modeChanged = mode !== prior.mode;
+      const modeParams = normalizeParams(prior.params, mode);
+      const shouldClearFrontier =
+        modeChanged || !paramsEqual(modeParams, prior.committedParams);
       set((state) => {
         const params = normalizeParams(state.params, mode);
         return {
@@ -408,7 +442,9 @@ export const useSimStore = create<SimState>()((set, get) => {
           triStats: null,
           modelComparison: null,
         };
-      }),
+      });
+      if (shouldClearFrontier) useFrontierStore.getState().clear();
+    },
 
     // Normalized like every commit (CPU 10k cap, retireYear ≤ horizonYears)
     // so the first load — not just the first commit — respects the cap.
@@ -423,7 +459,11 @@ export const useSimStore = create<SimState>()((set, get) => {
       clearCommitTimer();
       const { params, committedParams, mode } = get();
       if (params === committedParams) return;
-      set({ committedParams: normalizeParams(params, mode) });
+      const nextCommittedParams = normalizeParams(params, mode);
+      set({ committedParams: nextCommittedParams });
+      if (!paramsEqual(nextCommittedParams, committedParams)) {
+        useFrontierStore.getState().clear();
+      }
     },
     setModel: (model) => applyNow({ model }),
     setPathCount: (pathCount) => applyNow({ pathCount }),
