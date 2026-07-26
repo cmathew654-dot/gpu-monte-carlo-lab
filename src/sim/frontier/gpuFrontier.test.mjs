@@ -302,6 +302,28 @@ function unpairedRestoreRuns(log) {
   const params = capturedParams();
   const controller = new AbortController();
   const log = [];
+  const concurrentReadFailure = new Error('read rejected while aborting');
+  let artifact;
+  await assert.rejects(
+    runGpuRobustnessFrontier(loggedDependencies(log, {
+      readOutcome: async () => {
+        controller.abort();
+        throw concurrentReadFailure;
+      },
+    }), { params, signal: controller.signal }).then((result) => { artifact = result; }),
+    (error) => error?.name === 'AbortError' && error !== concurrentReadFailure,
+  );
+  assert.equal(artifact, undefined);
+  assert.equal(runEntries(log).length, 1);
+  assert.equal(runEntries(log)[0].signal, controller.signal);
+  assert.equal(runEntries(log).filter(({ signal }) => signal === undefined).length, 0);
+  assert.equal(readEntries(log).length, 1);
+}
+
+{
+  const params = capturedParams();
+  const controller = new AbortController();
+  const log = [];
   const restoreStarted = deferred();
   const releaseRestore = deferred();
   let artifact;
