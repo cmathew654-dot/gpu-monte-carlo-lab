@@ -13,6 +13,8 @@ import {
 const PORT = 5199;
 const EXPECTED_CHECKS = [
   'computeInit',
+  'computeRegimeStep',
+  'regimeStateParity',
   'computeStep',
   'computeStatsClear',
   'computeStatsReduce',
