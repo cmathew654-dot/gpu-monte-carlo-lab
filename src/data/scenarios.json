@@ -1,0 +1,87 @@
+[
+  {
+    "name": "Early retiree 35-yr",
+    "description": "Age-50 client walks in with $1.5M and wants to retire today, spending $5,500/month in today's dollars for 35 years (a 4.4% initial withdrawal rate — just above the classic 4% rule). Runs on the 1926–2026 block bootstrap, so the plan is stress-tested against the Depression, 1970s stagflation, and 2008. The live success rate answers the only question that matters: 'Do I make it to 85?'",
+    "params": {
+      "model": "bootstrap",
+      "pathCount": 100000,
+      "horizonYears": 35,
+      "retireYear": 0,
+      "initialWealth": 1500000,
+      "contribution": 0,
+      "withdrawal": 5500,
+      "mu": 0.07,
+      "sigma": 0.15,
+      "glidepath": null,
+      "seed": 42
+    }
+  },
+  {
+    "name": "Pre-retiree 10-yr glidepath",
+    "description": "Age-55 client, $650k saved, contributing $2,500/month, plans to retire at 65 and draw $4,500/month. Equity allocation glides from 90% down to 60% over the 10 working years — the classic 'de-risk into retirement' conversation. The de-risked sleeve is real: each simulated month blends that month's historical equity return with the SAME month's 10-year Treasury return (month-aligned Shiller blocks), and holds 60/40 through retirement — so the success-rate lift you see is actual bond diversification, not a cash-floor fudge. Toggle the glidepath off to see what staying 100% equity costs in sequence-of-returns risk.",
+    "params": {
+      "model": "bootstrap",
+      "pathCount": 100000,
+      "horizonYears": 30,
+      "retireYear": 10,
+      "initialWealth": 650000,
+      "contribution": 2500,
+      "withdrawal": 4500,
+      "mu": 0.07,
+      "sigma": 0.15,
+      "glidepath": { "start": 0.9, "end": 0.6 },
+      "seed": 42
+    }
+  },
+  {
+    "name": "Fat-tail stress",
+    "description": "For the client who says 'markets always come back.' Same prudent plan — $1.25M, $4,200/month (a textbook 4.0% initial rate), 30 years — but the return engine swaps Gaussian noise for Student-t (ν=5) innovations, matching the fat tails actually observed in a century of monthly data. Honest expectation-setting: over 360 monthly steps the central limit theorem washes most of that out — the measured terminal success gap vs GBM is ≈0.03pp (estimator noise), NOT a big drop. What fat tails actually change is the SHAPE of the journey: deeper, sharper crashes inside the paths (watch the worst-decile drawdown and the cone's left tail), which is exactly the experience that makes clients abandon a plan at the bottom.",
+    "params": {
+      "model": "fattail",
+      "pathCount": 1000000,
+      "horizonYears": 30,
+      "retireYear": 0,
+      "initialWealth": 1250000,
+      "contribution": 0,
+      "withdrawal": 4200,
+      "mu": 0.07,
+      "sigma": 0.15,
+      "glidepath": null,
+      "seed": 42
+    }
+  },
+  {
+    "name": "High-withdrawal cautionary",
+    "description": "The cautionary tale every advisor needs: client with $1.2M insists on $8,000/month — an 8% initial withdrawal rate, double the 4% rule. Watch the cone: the failure flag lights up across a wide swath of histories, and the median failure year tells the client roughly when the money runs out. Perfect segue to the safe-withdrawal-rate stat, which computes the withdrawal that history would have supported 90% of the time.",
+    "params": {
+      "model": "bootstrap",
+      "pathCount": 100000,
+      "horizonYears": 30,
+      "retireYear": 0,
+      "initialWealth": 1200000,
+      "contribution": 0,
+      "withdrawal": 8000,
+      "mu": 0.07,
+      "sigma": 0.15,
+      "glidepath": null,
+      "seed": 42
+    }
+  },
+  {
+    "name": "Accumulation only",
+    "description": "The 30-year-old just starting out: $25k saved, $1,500/month going in, no withdrawals for 30 years. No retirement-phase failure risk — this view is about the distribution of outcomes. Drag the contribution slider and watch the whole cone lift; the p5/p95 spread makes the case that time in the market, not timing, dominates the outcome.",
+    "params": {
+      "model": "bootstrap",
+      "pathCount": 100000,
+      "horizonYears": 30,
+      "retireYear": 30,
+      "initialWealth": 25000,
+      "contribution": 1500,
+      "withdrawal": 0,
+      "mu": 0.07,
+      "sigma": 0.15,
+      "glidepath": null,
+      "seed": 42
+    }
+  }
+]

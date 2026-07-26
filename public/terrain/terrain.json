@@ -1,0 +1,26 @@
+{
+  "name": "Mount Rainier",
+  "grid": 512,
+  "minElev": 1254,
+  "maxElev": 4388,
+  "summit": {
+    "lat": 46.8529,
+    "lon": -121.7604,
+    "elev": 4392
+  },
+  "metersPerPixel": 26.137,
+  "extentMeters": 13382,
+  "bounds": {
+    "west": -121.84834,
+    "east": -121.67255,
+    "north": 46.91299,
+    "south": 46.79277
+  },
+  "encoding": "uint16 little-endian, row-major (north first), meters",
+  "source": {
+    "tiles": "terrarium z12 x[661..664] y[1442..1445]",
+    "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+    "attribution": "Elevation: USGS NED / SRTM via Mapzen Terrarium"
+  },
+  "bake": "node scripts/build_terrain.mjs"
+}

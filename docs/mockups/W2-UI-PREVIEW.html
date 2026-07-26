@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPU Monte Carlo Lab — Wave 2 UI Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --night: #03050a;
+      --ink: #f5f7fb;
+      --muted: #a6adbb;
+      --quiet: #6e7788;
+      --line: rgba(203, 220, 255, 0.18);
+      --line-hot: rgba(203, 220, 255, 0.38);
+      --panel: rgba(5, 8, 15, 0.88);
+      --panel-solid: #080c14;
+      --glacier: #55c8ff;
+      --glacier-hot: #9fe4ff;
+      --gold: #f1bd5b;
+      --ember: #ff5d47;
+      --green: #77ddb0;
+      --c1: #5ad7ff;
+      --c2: #94e4b8;
+      --c3: #f1ca67;
+      --c4: #ff8e64;
+      --c5: #d98cff;
+      --c6: #c6edff;
+      --font-ui: "Bahnschrift", "DIN Alternate", "Franklin Gothic Medium", sans-serif;
+      --font-narrative: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      --font-data: "Cascadia Mono", "IBM Plex Mono", Consolas, monospace;
+      --z-stage: 0;
+      --z-overlay: 10;
+      --z-control: 20;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--night);
+      color: var(--ink);
+      font-family: var(--font-ui);
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--glacier-hot);
+      outline-offset: 3px;
+    }
+
+    .preview {
+      min-height: 100svh;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(46, 84, 132, 0.22), transparent 42%),
+        var(--night);
+    }
+
+    .preview-bar {
+      position: fixed;
+      inset: 14px 18px auto;
+      z-index: var(--z-control);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .preview-bar > * {
+      pointer-events: auto;
+    }
+
+    .preview-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .preview-mark {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--line-hot);
+      font-family: var(--font-data);
+      font-size: 11px;
+      color: var(--glacier-hot);
+      background: #050812;
+    }
+
+    .preview-brand strong {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .preview-brand small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-family: var(--font-data);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+    }
+
+    .view-switch {
+      display: flex;
+      padding: 3px;
+      border: 1px solid var(--line-hot);
+      background: #050812;
+    }
+
+    .view-switch button {
+      min-width: 98px;
+      padding: 8px 12px;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-family: var(--font-data);
+      font-size: 10px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .view-switch button[aria-selected="true"] {
+      color: #02050a;
+      background: var(--ink);
+    }
+
+    .screen {
+      position: relative;
+      display: none;
+      min-height: 100svh;
+      overflow: hidden;
+    }
+
+    .screen.is-active {
+      display: block;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Client view                                                        */
+    /* ------------------------------------------------------------------ */
+
+    .client-screen {
+      isolation: isolate;
+      background:
+        linear-gradient(180deg, rgba(2, 4, 10, 0.44), rgba(2, 4, 10, 0.08) 48%, rgba(2, 4, 10, 0.94)),
+        radial-gradient(circle at 50% 10%, rgba(91, 142, 204, 0.18), transparent 30%),
+        url("./concept-mountain.png") center 42% / cover no-repeat,
+        #050810;
+    }
+
+    .client-screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(90deg, rgba(2, 4, 10, 0.78), transparent 26%, transparent 74%, rgba(2, 4, 10, 0.62));
+      pointer-events: none;
+    }
+
+    .client-narrative {
+      position: relative;
+      z-index: var(--z-overlay);
+      width: min(760px, calc(100vw - 48px));
+      margin: 0 auto;
+      padding-top: clamp(86px, 10vh, 120px);
+      text-align: center;
+    }
+
+    .client-narrative .context {
+      margin: 0 0 13px;
+      color: var(--glacier-hot);
+      font-family: var(--font-data);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .client-narrative h1 {
+      max-width: 17ch;
+      margin: 0 auto;
+      font-family: var(--font-narrative);
+      font-size: clamp(34px, 4.6vw, 67px);
+      font-weight: 400;
+      line-height: 1.04;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.84);
+    }
+
+    .client-narrative .range {
+      color: var(--glacier-hot);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .client-narrative .failure-copy {
+      max-width: 66ch;
+      margin: 18px auto 0;
+      color: #c8ced8;
+      font-size: clamp(14px, 1.35vw, 18px);
+      font-weight: 350;
+      line-height: 1.55;
+      text-wrap: pretty;
+      text-shadow: 0 2px 8px #000;
+    }
+
+    .client-narrative .failure-copy strong {
+      color: var(--ink);
+      font-weight: 550;
+    }
+
+    .mountain-trails {
+      position: absolute;
+      inset: 16% 17% 22% 19%;
+      z-index: 2;
+      width: 64%;
+      height: 66%;
+      overflow: visible;
+      pointer-events: none;
+      filter: drop-shadow(0 0 6px rgba(90, 215, 255, 0.7));
+    }
+
+    .trail {
+      fill: none;
+      stroke-width: 1.35;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+      opacity: 0.86;
+      animation: trail-reveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .trail:nth-child(2) { animation-delay: 90ms; }
+    .trail:nth-child(3) { animation-delay: 180ms; }
+    .trail:nth-child(4) { animation-delay: 270ms; }
+    .trail:nth-child(5) { animation-delay: 360ms; }
+    .trail:nth-child(6) { animation-delay: 450ms; }
+
+    .trail--failed {
+      stroke-dasharray: 0.72 0.28;
+    }
+
+    .death {
+      fill: var(--ember);
+      filter: drop-shadow(0 0 5px var(--ember));
+    }
+
+    @keyframes trail-reveal {
+      from { stroke-dashoffset: 1; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .gauntlet-note {
+      position: absolute;
+      top: 25%;
+      left: clamp(18px, 2.4vw, 38px);
+      z-index: var(--z-overlay);
+      width: min(278px, 28vw);
+      padding: 16px 0 14px;
+      border-block: 1px solid var(--line-hot);
+      background: linear-gradient(90deg, rgba(3, 6, 12, 0.88), rgba(3, 6, 12, 0.22));
+    }
+
+    .gauntlet-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 13px;
+    }
+
+    .gauntlet-heading h2 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .gauntlet-heading span {
+      color: var(--quiet);
+      font-family: var(--font-data);
+      font-size: 9px;
+    }
+
+    .cohort-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .cohort-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 27px;
+      padding: 5px 8px;
+      border: 1px solid var(--line);
+      background: rgba(5, 9, 17, 0.82);
+      color: var(--ink);
+      font-family: var(--font-data);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cohort-chip i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--chip);
+      box-shadow: 0 0 5px var(--chip);
+    }
+
+    .cohort-chip .pass { color: var(--green); }
+    .cohort-chip .fail { color: #ff8a78; }
+
+    .gauntlet-story {
+      margin: 13px 0 0;
+      color: #d7dce5;
+      font-family: var(--font-narrative);
+      font-size: 14px;
+      line-height: 1.42;
+      text-wrap: pretty;
+    }
+
+    .gauntlet-story strong {
+      color: var(--gold);
+      font-weight: 500;
+    }
+
+    .client-controls {
+      position: absolute;
+      inset: auto 50% 23px auto;
+      z-index: var(--z-overlay);
+      width: min(720px, calc(100vw - 40px));
+      transform: translateX(50%);
+    }
+
+    .preset-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px 18px;
+      margin-bottom: 11px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .preset-row button {
+      flex: 0 0 auto;
+      padding: 4px 0;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      color: #b0b7c2;
+      background: transparent;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .preset-row button:hover {
+      color: #fff;
+      border-color: var(--glacier);
+    }
+
+    .control-deck {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      align-items: end;
+      gap: 28px;
+      padding: 14px 16px 13px;
+      border: 1px solid var(--line-hot);
+      background: rgba(4, 7, 13, 0.88);
+    }
+
+    .slider label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 9px;
+      color: var(--muted);
+      font-family: var(--font-data);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .slider output {
+      color: var(--ink);
+      font-size: 11px;
+    }
+
+    .slider input {
+      width: 100%;
+      accent-color: var(--glacier);
+    }
+
+    .mode-badge {
+      align-self: center;
+      color: var(--green);
+      font-family: var(--font-data);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .mode-badge::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Advisor view                                                       */
+    /* ------------------------------------------------------------------ */
+
+    .advisor-screen {
+      background:
+        radial-gradient(ellipse at 50% 58%, rgba(23, 69, 126, 0.22), transparent 44%),
+        linear-gradient(180deg, #020307, #05080d 55%, #020307);
+    }
+
+    .advisor-field {
+      position: absolute;
+      inset: 10% 18% 8% 20%;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    .advisor-field::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 4%;
+      width: 58%;
+      height: 74%;
+      transform: translateX(-50%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      background:
+        radial-gradient(circle at 50% 12%, rgba(241, 189, 91, 0.72) 0 1px, transparent 2px),
+        radial-gradient(circle, rgba(85, 200, 255, 0.78) 0 1px, transparent 1.7px);
+      background-size: auto, 17px 15px;
+      mask-image: linear-gradient(to bottom, transparent, #000 16%, #000);
+      filter: drop-shadow(0 0 6px rgba(85, 200, 255, 0.4));
+    }
+
+    .advisor-field::after {
+      content: "";
+      position: absolute;
+      inset: 28% 12% 18%;
+      border-block: 1px solid rgba(85, 200, 255, 0.16);
+      transform: perspective(400px) rotateX(54deg);
+    }
+
+    .rail {
+      position: absolute;
+      top: 70px;
+      bottom: 20px;
+      z-index: var(--z-overlay);
+      width: 284px;
+      padding: 16px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: rgba(4, 6, 11, 0.94);
+      scrollbar-width: thin;
+    }
+
+    .rail--left { left: 16px; }
+    .rail--right { right: 16px; }
+
+    .rail-title {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-family: var(--font-data);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .control-group {
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-group label {
+      display: block;
+      margin-bottom: 7px;
+      color: #d8dde5;
+      font-size: 11px;
+    }
+
+    .segmented {
+      display: flex;
+      border: 1px solid var(--line);
+    }
+
+    .segmented span {
+      flex: 1;
+      padding: 7px 3px;
+      border-right: 1px solid var(--line);
+      color: var(--quiet);
+      font-family: var(--font-data);
+      font-size: 9px;
+      text-align: center;
+    }
+
+    .segmented span:last-child { border-right: 0; }
+    .segmented .active { color: #02050a; background: var(--ink); }
+
+    .advisor-gauntlet {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      z-index: var(--z-overlay);
+      width: min(760px, calc(100vw - 640px));
+      min-width: 500px;
+      transform: translateX(-50%);
+      border-block: 1px solid var(--line-hot);
+      background: rgba(4, 7, 13, 0.92);
+    }
+
+    .advisor-gauntlet header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 12px 9px;
+    }
+
+    .advisor-gauntlet h2 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .advisor-gauntlet header p {
+      margin: 0;
+      color: var(--gold);
+      font-family: var(--font-narrative);
+      font-size: 13px;
+    }
+
+    .gauntlet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-data);
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gauntlet-table th,
+    .gauntlet-table td {
+      padding: 7px 10px;
+      border-top: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .gauntlet-table th {
+      color: var(--quiet);
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .gauntlet-table th:first-child,
+    .gauntlet-table td:first-child {
+      text-align: left;
+    }
+
+    .cohort-name {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #e3e7ed;
+    }
+
+    .cohort-name i {
+      width: 14px;
+      height: 2px;
+      background: var(--chip);
+      box-shadow: 0 0 5px var(--chip);
+    }
+
+    .status-pass { color: var(--green); }
+    .status-fail { color: #ff8a78; }
+    .status-limited { color: var(--gold); }
+
+    .success-stat {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .success-stat span {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .success-stat strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--glacier);
+      font-family: var(--font-data);
+      font-size: 42px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .triangulation {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .triangulation h3 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .model-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 5px 0;
+      color: var(--muted);
+      font-family: var(--font-data);
+      font-size: 9px;
+    }
+
+    .model-row b {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .model-range {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0 9px;
+      padding: 8px 9px;
+      background: rgba(85, 200, 255, 0.09);
+      color: var(--glacier-hot);
+      font-family: var(--font-data);
+      font-size: 10px;
+    }
+
+    .triangulation p {
+      margin: 0;
+      color: #c6ccd6;
+      font-family: var(--font-narrative);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .metric-line {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric-line:last-child { border-bottom: 0; }
+
+    .metric-line label {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric-line strong {
+      display: block;
+      margin-top: 4px;
+      font-family: var(--font-data);
+      font-size: 18px;
+      font-weight: 550;
+    }
+
+    .metric-line small {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-family: var(--font-data);
+      font-size: 8px;
+      line-height: 1.45;
+    }
+
+    .danger { color: #ff8a78; }
+    .accent { color: var(--glacier-hot); }
+
+    .sample-note {
+      position: fixed;
+      right: 18px;
+      bottom: 12px;
+      z-index: var(--z-control);
+      color: rgba(210, 218, 230, 0.54);
+      font-family: var(--font-data);
+      font-size: 8px;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+    }
+
+    @media (max-width: 1050px) {
+      .gauntlet-note {
+        top: auto;
+        right: 22px;
+        bottom: 160px;
+        left: 22px;
+        width: auto;
+        padding-inline: 10px;
+      }
+
+      .gauntlet-heading {
+        margin-bottom: 8px;
+      }
+
+      .gauntlet-story {
+        margin-top: 8px;
+        font-size: 12px;
+      }
+
+      .mountain-trails {
+        inset: 20% 7% 24%;
+        width: 86%;
+        height: 58%;
+      }
+
+      .advisor-gauntlet {
+        right: 16px;
+        left: 316px;
+        width: auto;
+        min-width: 0;
+        transform: none;
+        overflow-x: auto;
+      }
+
+      .rail--right {
+        display: none;
+      }
+
+      .advisor-field {
+        inset-inline: 28%;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .preview-bar {
+        inset: 10px 10px auto;
+      }
+
+      .preview-brand small,
+      .preview-mark {
+        display: none;
+      }
+
+      .view-switch button {
+        min-width: 78px;
+        padding-inline: 8px;
+      }
+
+      .client-narrative {
+        padding-top: 92px;
+      }
+
+      .client-narrative h1 {
+        font-size: clamp(31px, 10vw, 48px);
+      }
+
+      .client-narrative .failure-copy {
+        font-size: 13px;
+      }
+
+      .gauntlet-note {
+        bottom: 192px;
+        max-height: 152px;
+        overflow-y: auto;
+      }
+
+      .gauntlet-story {
+        display: none;
+      }
+
+      .control-deck {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .preset-row {
+        justify-content: flex-start;
+      }
+
+      .client-controls {
+        bottom: 13px;
+      }
+
+      .rail--left {
+        display: none;
+      }
+
+      .advisor-gauntlet {
+        right: 12px;
+        left: 12px;
+        width: auto;
+      }
+
+      .advisor-field {
+        inset: 30% 3% 6%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="preview">
+    <header class="preview-bar">
+      <div class="preview-brand">
+        <span class="preview-mark" aria-hidden="true">W2</span>
+        <div>
+          <strong>GPU Monte Carlo Lab</strong>
+          <small>Wave 2 presentation preview</small>
+        </div>
+      </div>
+      <nav class="view-switch" aria-label="Preview view">
+        <button type="button" data-target="client" aria-selected="true">Client</button>
+        <button type="button" data-target="advisor" aria-selected="false">Advisor</button>
+      </nav>
+    </header>
+
+    <section id="client-screen" class="screen client-screen is-active" aria-label="Client view preview">
+      <div class="client-narrative">
+        <p class="context">Three models · one honest range</p>
+        <h1>
+          In <span class="range">64–70</span> of 100 futures, your money outlives you.
+        </h1>
+        <p class="failure-copy">
+          When it fails, it fails around year <strong>19</strong> —
+          typically short <strong>11.4 years</strong> and <strong>$684k</strong>.
+        </p>
+      </div>
+
+      <svg class="mountain-trails" viewBox="0 0 100 100" aria-hidden="true">
+        <path class="trail" pathLength="1" stroke="var(--c1)" d="M9 88 C18 74 22 69 33 57 S47 37 52 13" />
+        <path class="trail" pathLength="1" stroke="var(--c2)" d="M20 96 C24 82 37 72 40 59 S49 30 52 13" />
+        <path class="trail trail--failed" pathLength="1" stroke="var(--c3)" d="M36 98 C38 82 46 69 43 57 S47 39 49 31" />
+        <circle class="death" cx="49" cy="31" r="0.9" />
+        <path class="trail" pathLength="1" stroke="var(--c4)" d="M93 90 C79 80 73 70 65 59 S58 31 52 13" />
+        <path class="trail trail--failed" pathLength="1" stroke="var(--c5)" d="M76 99 C68 82 62 75 62 61 S56 46 55 38" />
+        <circle class="death" cx="55" cy="38" r="0.9" />
+        <path class="trail" pathLength="1" stroke="var(--c6)" d="M57 97 C59 81 52 74 56 58 S54 29 52 13" />
+      </svg>
+
+      <aside class="gauntlet-note" aria-label="Historical gauntlet">
+        <div class="gauntlet-heading">
+          <h2>Historical gauntlet</h2>
+          <span>ACTUAL RETURNS</span>
+        </div>
+        <div class="cohort-list">
+          <span class="cohort-chip" style="--chip: var(--c1)"><i></i>1929 <b class="pass">✓</b></span>
+          <span class="cohort-chip" style="--chip: var(--c2)"><i></i>1937 <b class="pass">✓</b></span>
+          <span class="cohort-chip" style="--chip: var(--c3)"><i></i>1966 <b class="fail">✕ YR 28</b></span>
+          <span class="cohort-chip" style="--chip: var(--c4)"><i></i>1973 <b class="pass">✓</b></span>
+          <span class="cohort-chip" style="--chip: var(--c5)"><i></i>2000 <b class="fail">✕ YR 24</b></span>
+          <span class="cohort-chip" style="--chip: var(--c6)"><i></i>2008 <b class="pass">✓*</b></span>
+        </div>
+        <p class="gauntlet-story">
+          The crash you survive versus the grind you don’t:
+          <strong>1929 recovers. 1966 runs out in year 28.</strong>
+        </p>
+      </aside>
+
+      <section class="client-controls" aria-label="Client controls preview">
+        <div class="preset-row">
+          <button>Early retiree</button>
+          <button>10-year glidepath</button>
+          <button>Fat-tail stress</button>
+          <button>High withdrawal</button>
+          <button>Accumulation</button>
+        </div>
+        <div class="control-deck">
+          <div class="slider">
+            <label>Monthly spending <output>$5,000</output></label>
+            <input type="range" min="0" max="10000" value="5000" aria-label="Monthly spending preview" />
+          </div>
+          <div class="slider">
+            <label>Retire at year <output>Now</output></label>
+            <input type="range" min="0" max="30" value="0" aria-label="Retirement year preview" />
+          </div>
+          <span class="mode-badge">GPU · 100K</span>
+        </div>
+      </section>
+    </section>
+
+    <section id="advisor-screen" class="screen advisor-screen" aria-label="Advisor view preview">
+      <div class="advisor-field" aria-hidden="true"></div>
+
+      <aside class="rail rail--left" aria-label="Simulation controls preview">
+        <p class="rail-title">Simulation controls</p>
+        <div class="control-group">
+          <label>Return model</label>
+          <div class="segmented"><span>GBM</span><span class="active">Block</span><span>T(5)</span></div>
+        </div>
+        <div class="control-group">
+          <label>Paths</label>
+          <div class="segmented"><span>10K</span><span class="active">100K</span><span>1M</span></div>
+        </div>
+        <div class="control-group slider">
+          <label>Horizon <output>30 years</output></label>
+          <input type="range" min="10" max="40" value="30" aria-label="Horizon preview" />
+        </div>
+        <div class="control-group slider">
+          <label>Initial wealth <output>$1.00M</output></label>
+          <input type="range" min="100000" max="3000000" value="1000000" aria-label="Initial wealth preview" />
+        </div>
+        <div class="control-group slider">
+          <label>Withdrawal <output>$5,000/mo</output></label>
+          <input type="range" min="0" max="10000" value="5000" aria-label="Withdrawal preview" />
+        </div>
+      </aside>
+
+      <section class="advisor-gauntlet" aria-label="Advisor historical gauntlet table">
+        <header>
+          <h2>Historical gauntlet</h2>
+          <p>The crash recovered. The long inflationary grind did not.</p>
+        </header>
+        <table class="gauntlet-table">
+          <thead>
+            <tr>
+              <th>Cohort</th>
+              <th>Plan</th>
+              <th>Failure</th>
+              <th>Ending wealth</th>
+              <th>Max SWR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c1)"><i></i>1929 · Depression</span></td>
+              <td class="status-pass">Survives</td><td>—</td><td>$1.08M</td><td>4.10%</td>
+            </tr>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c2)"><i></i>1937 · Second leg</span></td>
+              <td class="status-pass">Survives</td><td>—</td><td>$1.74M</td><td>4.93%</td>
+            </tr>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c3)"><i></i>1966 · Stagflation</span></td>
+              <td class="status-fail">Fails</td><td>Year 28.2</td><td>$0</td><td>3.91%</td>
+            </tr>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c4)"><i></i>1973 · Oil shock</span></td>
+              <td class="status-pass">Survives</td><td>—</td><td>$412k</td><td>4.25%</td>
+            </tr>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c5)"><i></i>2000 · Double bear</span></td>
+              <td class="status-limited">Still going*</td><td>—</td><td>$638k*</td><td>4.15%*</td>
+            </tr>
+            <tr>
+              <td><span class="cohort-name" style="--chip: var(--c6)"><i></i>2008 · GFC</span></td>
+              <td class="status-limited">Still going*</td><td>—</td><td>$792k*</td><td>7.62%*</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <aside class="rail rail--right" aria-label="Simulation statistics preview">
+        <p class="rail-title">Outcomes</p>
+        <div class="success-stat">
+          <span>Probability of success</span>
+          <strong>69.8%</strong>
+        </div>
+
+        <section class="triangulation" aria-label="Model triangulation">
+          <h3>Model triangulation</h3>
+          <div class="model-row"><span>GBM</span><b>63.8%</b></div>
+          <div class="model-row"><span>Historical blocks</span><b>69.8%</b></div>
+          <div class="model-row"><span>Student-t(5)</span><b>64.1%</b></div>
+          <div class="model-range"><span>ASSUMPTION RANGE</span><b>63.8–69.8%</b></div>
+          <p>Where the models disagree, the assumptions live.</p>
+        </section>
+
+        <div class="metric-line">
+          <label>Worst-decile max drawdown</label>
+          <strong class="danger">−100.0%</strong>
+          <small>MEAN OF DEEPEST 10% OF PEAK-TO-TROUGH LOSSES</small>
+        </div>
+        <div class="metric-line">
+          <label>Median failure year</label>
+          <strong class="danger">YR 19</strong>
+          <small>FAILED PATHS ONLY</small>
+        </div>
+        <div class="metric-line">
+          <label>Median shortfall</label>
+          <strong class="danger">11.4 YRS</strong>
+          <small>PLAN YEARS LEFT UNFUNDED AFTER RUIN</small>
+        </div>
+        <div class="metric-line">
+          <label>Median unfunded obligation</label>
+          <strong class="accent">$684K</strong>
+          <small>REAL, UNDISCOUNTED WITHDRAWALS AFTER FAILURE</small>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <p class="sample-note">ILLUSTRATIVE VALUES · LAYOUT PREVIEW ONLY</p>
+
+  <script>
+    const buttons = [...document.querySelectorAll("[data-target]")];
+    const screens = {
+      client: document.getElementById("client-screen"),
+      advisor: document.getElementById("advisor-screen")
+    };
+
+    function showView(target) {
+      for (const [name, screen] of Object.entries(screens)) {
+        screen.classList.toggle("is-active", name === target);
+      }
+      for (const button of buttons) {
+        button.setAttribute("aria-selected", String(button.dataset.target === target));
+      }
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => showView(button.dataset.target));
+    }
+  </script>
+</body>
+</html>
