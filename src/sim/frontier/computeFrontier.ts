@@ -20,6 +20,15 @@ const A5_CAPACITY_OPTIONS = {
   maxMonthlySpending: 100_000,
 } as const;
 
+export function frontierEvaluationBudgetForThreeModels(
+  currentSpending: number,
+): number {
+  return capacityEvaluationBudget({
+    currentSpending,
+    ...A5_CAPACITY_OPTIONS,
+  }) * A5_MODELS.length;
+}
+
 export interface FrontierModelRunner {
   model: ShippedModelKey;
   run: (
@@ -132,7 +141,9 @@ export async function computeRobustnessFrontier(
     currentSpending: capturedParams.withdrawal,
     ...A5_CAPACITY_OPTIONS,
   });
-  const total = perModelTotal * runners.length;
+  const total = frontierEvaluationBudgetForThreeModels(
+    capturedParams.withdrawal,
+  );
   const models: RobustnessFrontier['models'][number][] = [];
 
   for (const [index, runner] of runners.entries()) {

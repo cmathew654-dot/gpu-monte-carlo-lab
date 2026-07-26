@@ -451,3 +451,10 @@ const moduleText = await readFile(
   'utf8',
 );
 assert.doesNotMatch(moduleText, /zustand|store\//i);
+
+const runtimeSource = await readFile(
+  new URL('../../src/scene/simRuntime.ts', import.meta.url),
+  'utf8',
+);
+assert.match(runtimeSource, /requestRobustnessFrontier/);
+assert.match(runtimeSource, /requestSafeWithdrawal/);

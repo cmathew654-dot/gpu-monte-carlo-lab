@@ -4,6 +4,12 @@
  * when no GPU driver is active. Lives in its own module (not SimDriver.tsx)
  * so the driver component file exports only components.
  */
-export const simRuntime: { requestSafeWithdrawal: (() => void) | null } = {
+export interface SimRuntime {
+  requestSafeWithdrawal: (() => void) | null;
+  requestRobustnessFrontier: (() => void) | null;
+}
+
+export const simRuntime: SimRuntime = {
   requestSafeWithdrawal: null,
+  requestRobustnessFrontier: null,
 };

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   assertMonotoneCurve,
   computeRobustnessFrontier,
+  frontierEvaluationBudgetForThreeModels,
 } from './computeFrontier.ts';
 import { capacityEvaluationBudget } from './capacity.ts';
 
@@ -51,6 +52,10 @@ function capacityBudget(withdrawal) {
     maxMonthlySpending: 100_000,
   });
 }
+
+assert.equal(frontierEvaluationBudgetForThreeModels(0), 54);
+assert.equal(frontierEvaluationBudgetForThreeModels(5_000), 45);
+assert.equal(frontierEvaluationBudgetForThreeModels(100_000), 33);
 
 {
   const events = [];
