@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   projectRootFromModuleUrl,
   resolveChromiumExecutable,
+  systemChromiumCandidates,
 } from './launcherPaths.mjs';
 
 const expectedRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -56,4 +57,15 @@ assert.throws(
   /No Chromium executable found/,
 );
 
-console.log('launcherPaths: 6 passed, 0 failed');
+assert.deepEqual(systemChromiumCandidates('win32'), []);
+assert.equal(
+  resolveChromiumExecutable({
+    environmentPath: 'C:\\Browser\\chrome.exe',
+    systemCandidates: [],
+    playwrightPath: 'C:\\Playwright\\chrome.exe',
+    existsSync: (candidate) => candidate === 'C:\\Browser\\chrome.exe',
+  }),
+  'C:\\Browser\\chrome.exe',
+);
+
+console.log('launcherPaths: 8 passed, 0 failed');
