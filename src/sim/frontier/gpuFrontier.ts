@@ -40,6 +40,21 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw abortError();
 }
 
+async function awaitWithAbortPriority<T>(
+  operation: Promise<T>,
+  signal: AbortSignal | undefined,
+): Promise<T> {
+  let result: T;
+  try {
+    result = await operation;
+  } catch (error) {
+    throwIfAborted(signal);
+    throw error;
+  }
+  throwIfAborted(signal);
+  return result;
+}
+
 function captureParams(params: SimParams): SimParams {
   return {
     ...params,
@@ -70,16 +85,20 @@ export async function runGpuRobustnessFrontier(
         pathCount: ANALYSIS_PATH_COUNT,
         seed: captured.seed,
       };
-      await dependencies.runSimulation(analysisParams, signal);
-      throwIfAborted(signal);
-      const outcome = await dependencies.readOutcome(analysisParams, signal);
-      throwIfAborted(signal);
-      return outcome;
+      await awaitWithAbortPriority(
+        dependencies.runSimulation(analysisParams, signal),
+        signal,
+      );
+      return awaitWithAbortPriority(
+        dependencies.readOutcome(analysisParams, signal),
+        signal,
+      );
     },
   }));
 
+  let frontier: RobustnessFrontier;
   try {
-    const frontier = await computeRobustnessFrontier(runners, {
+    frontier = await computeRobustnessFrontier(runners, {
       params: captured,
       analysisPathCount: ANALYSIS_PATH_COUNT,
       engine: 'gpu',
@@ -88,21 +107,29 @@ export async function runGpuRobustnessFrontier(
       onProgress: options.onProgress,
       now: dependencies.now,
     });
-    throwIfAborted(options.signal);
-    await restore();
-    throwIfAborted(options.signal);
-    return frontier;
   } catch (originalError) {
-    if (options.signal?.aborted || restoreAttempted) throw originalError;
+    throwIfAborted(options.signal);
 
     try {
       await restore();
     } catch (restoreError) {
+      throwIfAborted(options.signal);
       throw new AggregateError(
         [originalError, restoreError],
         'GPU frontier failed and primary restore failed',
       );
     }
+    throwIfAborted(options.signal);
     throw originalError;
   }
+
+  throwIfAborted(options.signal);
+  try {
+    await restore();
+  } catch (restoreError) {
+    throwIfAborted(options.signal);
+    throw restoreError;
+  }
+  throwIfAborted(options.signal);
+  return frontier;
 }
