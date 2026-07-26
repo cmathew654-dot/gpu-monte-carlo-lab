@@ -252,3 +252,11 @@ dedicated frontier store/worker, and GPU restoration contract are specified in
 [AMENDMENT_A5_ROBUSTNESS_FRONTIER.md](AMENDMENT_A5_ROBUSTNESS_FRONTIER.md).
 Frozen `SimParams`, `SimStats`, `TriStats`, buffers, model IDs, operation order,
 and the existing CPU worker protocol remain unchanged.
+
+## Amendment A6 — No frozen-stat shape change
+
+Regime-t produces the existing success, percentile, worst-decile drawdown,
+failure-year, and magnitude semantics through the additive `RegimeOutcome`
+shape defined by A5. It does not extend or reinterpret `SimStats`,
+`MagnitudeStats`, or `TriStats`. Calibration, runtime, and complete-set
+publication contracts are specified in [AMENDMENT_A6.md](AMENDMENT_A6.md).

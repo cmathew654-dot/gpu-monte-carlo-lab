@@ -115,3 +115,55 @@ frozen interface details belong in the contract documents.
   eight bisections.
 - Why: a stable order and bounded evaluation budget make complete-set
   publication, cancellation, and validation reproducible.
+
+## D-013 — Offline, fail-closed regime calibration
+
+- Date: 2026-07-26
+- Status: approved for Amendment A6
+- Decision: reconstruct, fit, accept, and serialize the regime model only in a
+  deterministic Node calibration command; validate and consume the committed
+  artifact at runtime without fitting.
+- Why: the browser should run a reviewed quantitative artifact, and any data,
+  fit, or serialization drift must fail before deployment.
+
+## D-014 — Parsimonious scale HMM after empirical rejection
+
+- Date: 2026-07-26
+- Status: approved for Amendment A6
+- Decision: use a common mean and common covariance shape with two latent
+  positive scales, Student-t(5) emissions, and Markov persistence.
+- Why: the initially planned unconstrained HMM partitioned persistent eras and
+  mean levels but failed the unchanged 1.5× volatility-separation gate. The
+  scale model cleared every in-sample and rolling-origin gate without weakening
+  acceptance thresholds.
+- Limitation: state scale changes; conditional stock–bond correlation does not.
+
+## D-015 — Latest-filtered application initialization
+
+- Date: 2026-07-26
+- Status: approved for Amendment A6
+- Decision: initialize application paths from the artifact's filtered state
+  probability through 2026-06. Evaluate stationary initialization only as a
+  validation sensitivity.
+- Why: this makes the conditional starting assumption explicit without
+  presenting it as a market forecast or a second displayed curve.
+
+## D-016 — Separate frontier-only regime runners
+
+- Date: 2026-07-26
+- Status: approved for Amendment A6
+- Decision: implement separate CPU and TSL/GPU regime runners; never add
+  `'regime'` to `SimParams['model']`, never allocate model ID 3, and never
+  change the frozen primary model kernel/driver.
+- Why: the regime process is an assumption lens, while the selected primary
+  simulator and its visualization contracts remain stable.
+
+## D-017 — Four-model atomic frontier
+
+- Date: 2026-07-26
+- Status: approved for Amendment A6
+- Decision: append regime after gbm/bootstrap/fattail, run all four
+  sequentially with identical inputs and seed, restore the selected primary on
+  GPU, and publish only the complete set.
+- Why: robust spending is meaningful only when the orthogonal persistence lens
+  participates in the same measured decision boundary.

@@ -12,7 +12,7 @@ export const FRONTIER_MODEL_LABELS: Record<FrontierModelKey, string> = {
   gbm: 'GBM',
   bootstrap: 'Historical bootstrap',
   fattail: 'Student-t(5)',
-  regime: 'Regime model',
+  regime: 'Regime-t',
 };
 
 export interface ComparisonRange {

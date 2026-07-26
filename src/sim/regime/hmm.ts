@@ -17,6 +17,7 @@ const ROLLING_REFIT_MONTHS = 12;
 export interface HmmFitOptions {
   maxIterations: 250;
   perObservationTolerance: 1e-7;
+  /** One-state rolling comparator only; the scale HMM fixes one common mean. */
   meanShrinkageObservations: 12;
   covarianceEigenFloor: 1e-8;
   transitionPseudoCount: 1;

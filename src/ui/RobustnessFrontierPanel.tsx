@@ -183,7 +183,8 @@ export function RobustnessFrontierPanelView({
         <h2 id="robustness-frontier-heading">Robustness frontier</h2>
         <p>
           Compare tested real monthly spending across return models without treating
-          connected points as untested simulations.
+          connected points as untested simulations. Regime-t uses the shipped
+          1926-2026 calibration and ignores the mu / sigma sliders.
         </p>
       </header>
       {status === 'running' && (

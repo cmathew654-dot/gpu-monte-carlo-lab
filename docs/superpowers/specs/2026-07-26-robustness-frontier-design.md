@@ -19,7 +19,7 @@ The answer is not another point estimate. It is a robustness frontier:
 1. Compare more than success probability at the current plan.
 2. Trace success against real monthly spending for every included model.
 3. Identify the lowest model-specific 90% spending capacity.
-4. Add one orthogonal regime model that introduces persistent market states and changing stock–bond diversification.
+4. Add one orthogonal regime model that introduces persistent joint return-scale states.
 
 The interface must teach three different uncertainties without conflating them:
 
@@ -326,7 +326,9 @@ After A6, the worker imports `runCpuRegimeSim` for the fourth model.
 
 ### 8.1 Purpose
 
-The shipped models cover constant-parameter diffusion, one-year historical blocks, and independent heavy tails. They do not create an uncertain multi-year state with persistent return, volatility, and stock–bond correlation.
+The shipped models cover constant-parameter diffusion, one-year historical
+blocks, and independent heavy tails. They do not create an uncertain
+multi-year state with persistent joint volatility scale.
 
 Regime-t is a separate planning lens, not a selectable fourth value in frozen `SimParams.model`.
 
@@ -338,8 +340,8 @@ For monthly real equity and Treasury total returns:
 x_t = [log(1 + r_equity,t), log(1 + r_bond,t)]
 S_t ∈ {calm, stress}
 P(S_t = j | S_t-1 = i) = P_ij
-x_t = μ_S + L_S z_t sqrt((ν - 2) / χ²_ν), ν = 5
-L_S L_S' = covariance_S
+x_t = μ + L_S z_t sqrt((ν - 2) / χ²_ν), ν = 5
+L_S L_S' = covariance_S = q_S covariance_shape
 ```
 
 For equity allocation `A_t`:
@@ -350,7 +352,10 @@ gross_t = A_t * exp(x_equity,t) + (1 - A_t) * exp(x_bond,t)
 
 This is monthly rebalancing with paired stock/bond outcomes. `A_t` uses the existing `glidepathMix` convention when a glidepath is active and equals 1.0 otherwise. The regime lens ignores the user’s parametric `mu` and `sigma` sliders because it is calibrated from the shipped data; the UI states this explicitly.
 
-The state ordering is fixed by `equityVolCalm < equityVolStress`. Degrees of freedom remain 5 so the difference from Model C primarily isolates regime persistence and changing diversification.
+The state ordering is fixed by `equityVolCalm < equityVolStress`. Degrees of
+freedom remain 5 so the difference from Model C primarily isolates persistent
+joint scale. The accepted fit uses a common conditional mean and covariance
+shape, so it does not claim state-varying stock–bond correlation.
 
 ### 8.3 Calibration artifact
 
@@ -360,8 +365,8 @@ The calibrator:
 
 - Recovers the unique chronological series from overlapping blocks and verifies all overlaps.
 - Converts simple returns with `log1p`.
-- Fits a two-state bivariate Student-t(5) hidden Markov model with scaled forward-backward recursion.
-- Uses t-mixture weights in the M-step, 12-month shrinkage of regime means toward the full-sample mean, a positive-definite covariance floor, and Beta(2,2)-equivalent transition pseudocounts.
+- Fits a two-state bivariate Student-t(5) scale hidden Markov model with scaled forward-backward recursion.
+- Fixes one full-sample mean and covariance shape, estimates one positive scale per state with t-mixture weights, applies a positive-definite covariance floor, and uses Beta(2,2)-equivalent transition pseudocounts. The one-state rolling comparator uses 12 observation-equivalents of mean shrinkage.
 - Runs at least four deterministic dispersed initializations and keeps the highest-likelihood converged fit.
 - Stops at 250 iterations or when the per-observation log-likelihood improvement is below `1e-7`.
 - Orders states by equity volatility after every fit.
@@ -374,7 +379,7 @@ Acceptance checks:
 - Both covariance matrices are positive definite.
 - Each state has at least 10% filtered occupancy.
 - Stress equity volatility is at least 1.5 times calm equity volatility.
-- Every transition probability is in `[0.5, 0.9999]`.
+- Every transition cell is in `[0.0001, 0.9999]`, and both diagonal persistence probabilities are in `[0.5, 0.9999]`.
 - The final fit converges from at least two dispersed starts to the same ordered solution within `1e-4` log likelihood per observation.
 - Expanding-window rolling-origin mean joint log predictive score, beginning after month 600 and refitting every 12 months, is not worse than the one-state bivariate Student-t(5) baseline.
 
@@ -486,8 +491,11 @@ Methodology disclosure must state:
 - Regimes are latent statistical classifications, not labels for known future events.
 - Latest-state initialization is conditional on data through 2026-06 and is not a market call.
 - Parameter uncertainty is not mixed into the displayed paths in this release.
+- The accepted scale HMM holds the conditional mean and stock–bond correlation common across states; it tests persistence and scale, not changing diversification.
 - Structural range is not a confidence interval and carries no model probabilities.
 - Robust spend is a 90% threshold on tested simulations, not individualized advice.
+- Regime-t ignores the ordinary `mu` and `sigma` sliders.
+- Physical-GPU performance remains unmeasured until tested on real hardware.
 
 ## 12. Ship criteria
 

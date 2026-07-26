@@ -6,6 +6,17 @@
 
 **Architecture:** Calibration is an offline, deterministic pure-TypeScript pipeline that reconstructs the 1,206-month equity/bond series, fits and accepts the HMM, and writes a reviewed JSON artifact; runtime code validates and consumes that artifact but never fits. A separate pure CPU runner and separate TSL graph/GPU driver reuse existing financial buffers additively, while A5's frontier orchestration appends a `'regime'` runner after the three frozen models and publishes only the complete four-model result.
 
+> **Measured execution amendment (2026-07-26):** the initially specified
+> unconstrained state-mean/state-covariance fit was implemented and rejected by
+> the unchanged 1.5× volatility-separation gate because it partitioned
+> persistent eras/mean levels rather than cleanly identifying scale states.
+> Production uses the narrower two-state Student-t(5) **scale HMM** documented
+> in `docs/AMENDMENT_A6.md`: one common full-sample mean, one common covariance
+> shape, and two fitted positive scales. Every original acceptance threshold,
+> four-start/rolling-origin requirement, runtime stream, and frozen boundary
+> remains binding. This plan is retained as execution history; the amendment is
+> the final contract.
+
 **Tech Stack:** TypeScript 5.9, Node.js/esbuild test harness, Zustand 5, three.js/TSL exactly 0.185.1, WebGPU/Tint production probe, JSON calibration artifact.
 
 ## Global Constraints

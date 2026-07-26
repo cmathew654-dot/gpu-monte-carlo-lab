@@ -557,3 +557,13 @@ dedicated frontier store/worker, and GPU restoration contract are specified in
 [AMENDMENT_A5_ROBUSTNESS_FRONTIER.md](AMENDMENT_A5_ROBUSTNESS_FRONTIER.md).
 Frozen `SimParams`, `SimStats`, `TriStats`, buffers, model IDs, operation order,
 and the existing CPU worker protocol remain unchanged.
+
+## Amendment A6 — Regime-t robustness lens
+
+The additive offline calibration artifact, parsimonious two-state Student-t(5)
+scale HMM, fixed RNG-stream assignment, separate CPU/GPU runners, temporary
+`pathBlockBase` state meaning, production Tint/parity probe, and atomic
+four-model frontier are specified in [AMENDMENT_A6.md](AMENDMENT_A6.md).
+Frozen `SimParams`, `SimStats`, `TriStats`, model IDs 0–2, buffers, existing
+kernels/drivers, financial operation order, and CPU worker protocol remain
+unchanged.
