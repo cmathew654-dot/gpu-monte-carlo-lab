@@ -225,8 +225,8 @@ Mutable operational handoff only.
 
 ### C-009 — Client composition and responsive framing
 
-- Status: implemented and verified on `feat/client-responsive-framing`; not
-  merged or deployed.
+- Status: completed, committed, visually verified, and merged locally; not
+  deployed.
 - Composition outcome: the client HUD uses the specified responsive breathing
   room, the Rainier summit targets 60% of scene height, historical cohort labels
   remain borderless with a dark text edge, and plan/method/cohort text never
@@ -252,8 +252,8 @@ Mutable operational handoff only.
   summits and zero probe errors.
 - Frozen surfaces: untouched. No simulation formula, store, worker protocol,
   buffer layout, `SimParams`, or `SimStats` contract changed.
-- Next action: choose whether to merge locally, push for review, or preserve the
-  feature branch.
+- Source and merged commit: `1168d58`.
+- Next action: deployment remains a separate explicit decision.
 
 ## Verified imported state
 
