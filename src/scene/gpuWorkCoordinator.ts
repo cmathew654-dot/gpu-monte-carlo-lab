@@ -1,11 +1,11 @@
 /**
  * Effect-local ownership of the shared GPU simulation buffers.
  *
- * Normal pipelines are allowed to supersede one another as before, but a
- * frontier must wait for every unsettled normal operation it invalidated.
- * Conversely, a normal waits for every unsettled frontier operation it
- * invalidated. The terminal sets make those handoffs acyclic and preserve
- * cooperative-abort safety around renderer work that cannot be interrupted.
+ * A superseding normal pipeline waits for every earlier normal and frontier
+ * terminal before it can dispatch. A frontier likewise waits for every
+ * unsettled normal and frontier terminal it invalidated. The terminal sets
+ * make those handoffs acyclic and preserve cooperative-abort safety around
+ * renderer work that cannot be interrupted.
  */
 
 interface TrackedTerminal {
@@ -94,6 +94,7 @@ export function createGpuWorkCoordinator(): GpuWorkCoordinator {
     invalidateFrontier();
     const priorFrontiers = waitFor(frontierTerminals);
     invalidateNormal();
+    const priorNormals = waitFor(normalTerminals);
 
     const controller = new AbortController();
     const token = ++normalToken;
@@ -103,7 +104,9 @@ export function createGpuWorkCoordinator(): GpuWorkCoordinator {
     return {
       signal: controller.signal,
       supersededFrontier,
-      waitForPriorOwners: priorFrontiers,
+      waitForPriorOwners: Promise.all([priorFrontiers, priorNormals]).then(
+        () => undefined,
+      ),
       isCurrent: () => !disposed
         && normalToken === token
         && normalController === controller,

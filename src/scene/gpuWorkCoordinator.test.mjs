@@ -2,12 +2,10 @@ import assert from 'node:assert/strict';
 import { createGpuWorkCoordinator } from './gpuWorkCoordinator.ts';
 
 async function settles(promise) {
-  let settled = false;
-  void promise.then(() => {
-    settled = true;
-  });
-  await Promise.resolve();
-  return settled;
+  return Promise.race([
+    promise.then(() => true),
+    new Promise((resolve) => { setTimeout(() => resolve(false), 0); }),
+  ]);
 }
 
 {
@@ -86,7 +84,9 @@ async function settles(promise) {
   const firstNormal = coordinator.beginNormal();
   const secondNormal = coordinator.beginNormal();
 
+  assert.equal(await settles(secondNormal.waitForPriorOwners), false);
   firstNormal.settle();
+  await secondNormal.waitForPriorOwners;
   assert.equal(secondNormal.isCurrent(), true);
   secondNormal.settle();
 }
