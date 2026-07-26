@@ -361,3 +361,12 @@ const cpuRuntimeSource = await readFile(
 assert.match(cpuRuntimeSource, /FrontierWorkerClient/);
 assert.match(cpuRuntimeSource, /requestRobustnessFrontier/);
 assert.match(cpuRuntimeSource, /frontier\.worker\.ts/);
+
+const simDriverSource = await readFile(
+  new URL('../../src/scene/SimDriver.tsx', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  simDriverSource,
+  /if\s*\(mode\s*!==\s*'gpu'\)\s*\{\s*simRuntime\.requestSafeWithdrawal\s*=\s*null/,
+);
