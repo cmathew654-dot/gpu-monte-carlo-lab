@@ -6,9 +6,19 @@
  * never blocks interaction. Empty state (stats === null) shows skeletons
  * until the first readback lands. All numbers use tabular-nums.
  */
-import { useSimStore, type SimStats } from '../store/simStore';
+import * as React from 'react';
+import {
+  useSimStore,
+  type MagnitudeStats,
+  type SimStats,
+} from '../store/simStore';
+import type { ModelComparison } from '../sim/frontier/types';
 import { fmtPct, fmtUSDCompact } from './format';
-import { successRateRange } from '../sim/model/triangulation';
+import {
+  FRONTIER_MODEL_LABELS,
+  advisorComparisonSentence,
+  comparisonRange,
+} from './frontierPresentation';
 
 // ---------------------------------------------------------------------------
 // Distribution strip — p5..p95 band with quartile ticks (reused by the CPU
@@ -93,15 +103,23 @@ function SkeletonCards() {
 // StatCards panel.
 // ---------------------------------------------------------------------------
 
-export function StatCards() {
-  const stats = useSimStore((s) => s.stats);
-  const isStale = useSimStore((s) => s.isStale);
-  const isRecomputing = useSimStore((s) => s.isRecomputing);
-  const magnitudeStats = useSimStore((s) => s.magnitudeStats);
-  const triStats = useSimStore((s) => s.triStats);
+export interface StatCardsViewProps {
+  stats: SimStats | null;
+  isStale: boolean;
+  isRecomputing: boolean;
+  magnitudeStats: MagnitudeStats | null;
+  modelComparison: ModelComparison | null;
+}
 
+export function StatCardsView({
+  stats,
+  isStale,
+  isRecomputing,
+  magnitudeStats,
+  modelComparison,
+}: StatCardsViewProps) {
   const busy = isStale || isRecomputing;
-  const triRange = triStats ? successRateRange(triStats) : null;
+  const comparison = modelComparison ? comparisonRange(modelComparison) : null;
 
   return (
     <div className="app-rail app-rail--right">
@@ -157,24 +175,25 @@ export function StatCards() {
                 </div>
               </div>
 
-              {triStats && triRange ? (
+              {modelComparison && comparison ? (
                 <div className="model-triangulation">
                   <div className="stat-row__label">Model triangulation</div>
                   <div className="model-triangulation__range data-label">
-                    {fmtPct(triRange.min, 1)}–{fmtPct(triRange.max, 1)}
+                    {fmtPct(comparison.success.min, 1)}–{fmtPct(comparison.success.max, 1)}
                   </div>
-                  {(
-                    [
-                      ['GBM', triStats.successRates.gbm],
-                      ['Historical bootstrap', triStats.successRates.bootstrap],
-                      ['Student-t(5)', triStats.successRates.fattail],
-                    ] as const
-                  ).map(([label, rate]) => (
-                    <div className="model-triangulation__row" key={label}>
-                      <span>{label}</span>
-                      <span className="data-label">{fmtPct(rate, 1)}</span>
+                  {modelComparison.models.map(({ model, stats: outcome }) => (
+                    <div className="model-triangulation__row" key={model}>
+                      <span>{FRONTIER_MODEL_LABELS[model]}</span>
+                      <span className="data-label">{fmtPct(outcome.successRate, 1)}</span>
+                      <span className="data-label">P50 {fmtUSDCompact(outcome.percentiles.p50)}</span>
+                      <span className="data-label">
+                        WORST-DECILE −{fmtPct(outcome.worstDecileMaxDD, 1)}
+                      </span>
                     </div>
                   ))}
+                  <p className="model-triangulation__interpretation">
+                    {advisorComparisonSentence(modelComparison)}
+                  </p>
                   <p>Where the models disagree, the assumptions live.</p>
                 </div>
               ) : null}
@@ -200,7 +219,7 @@ export function StatCards() {
               />
 
               {magnitudeStats ? (
-                <>
+                <React.Fragment>
                   <StatRow
                     label="Median shortfall"
                     value={
@@ -231,7 +250,7 @@ export function StatCards() {
                     }
                     sub="REAL, UNDISCOUNTED WITHDRAWALS"
                   />
-                </>
+                </React.Fragment>
               ) : null}
 
               {/* 5. Median failure year */}
@@ -254,5 +273,23 @@ export function StatCards() {
         </div>
       </aside>
     </div>
+  );
+}
+
+export function StatCards() {
+  const stats = useSimStore((state) => state.stats);
+  const isStale = useSimStore((state) => state.isStale);
+  const isRecomputing = useSimStore((state) => state.isRecomputing);
+  const magnitudeStats = useSimStore((state) => state.magnitudeStats);
+  const modelComparison = useSimStore((state) => state.modelComparison);
+
+  return (
+    <StatCardsView
+      stats={stats}
+      isStale={isStale}
+      isRecomputing={isRecomputing}
+      magnitudeStats={magnitudeStats}
+      modelComparison={modelComparison}
+    />
   );
 }

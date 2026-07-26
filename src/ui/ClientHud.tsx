@@ -17,13 +17,98 @@
  * dashboards. Pointer-events discipline mirrors the rails: the overlay is
  * transparent to the canvas except on its controls.
  */
-import { useEffect, useState } from 'react';
-import { useSimStore } from '../store/simStore';
+import * as React from 'react';
+import {
+  useSimStore,
+  type MagnitudeStats,
+  type SimMode,
+  type SimParams,
+  type SimStats,
+} from '../store/simStore';
+import { type FrontierStatus, useFrontierStore } from '../store/frontierStore';
+import type { ModelComparison, RobustnessFrontier } from '../sim/frontier/types';
 import { CapabilityBadge } from './CapabilityBadge';
 import { ParamSlider } from './controls';
-import { fmtUSD, fmtUSDCompact } from './format';
-import { successRateRange } from '../sim/model/triangulation';
-import { loadScenarioPresets, type ScenarioPreset } from './presets';
+import { fmtPct, fmtUSD, fmtUSDCompact } from './format';
+import {
+  clientRobustSpendSentence,
+  clientSaturationSentence,
+  comparisonRange,
+  isFrontierCurrent,
+} from './frontierPresentation';
+import type { ScenarioPreset } from './presets';
+
+export interface ClientNarrativeProps {
+  stats: SimStats | null;
+  modelComparison: ModelComparison | null;
+  magnitudeStats: MagnitudeStats | null;
+  frontierStatus: FrontierStatus;
+  frontierResult: RobustnessFrontier | null;
+  committedParams: SimParams;
+  mode: SimMode;
+}
+
+export function ClientNarrative({
+  stats,
+  modelComparison,
+  magnitudeStats,
+  frontierStatus,
+  frontierResult,
+  committedParams,
+  mode,
+}: ClientNarrativeProps) {
+  const successCount = stats === null ? null : Math.round(stats.successRate * 100);
+  const comparison = modelComparison ? comparisonRange(modelComparison) : null;
+  const successLow = comparison ? Math.round(comparison.success.min * 100) : successCount;
+  const successHigh = comparison ? Math.round(comparison.success.max * 100) : successCount;
+  const failureYear = stats?.medianFailureYear === null || stats === null
+    ? null
+    : Math.round(stats.medianFailureYear);
+  const saturation = modelComparison ? clientSaturationSentence(modelComparison) : null;
+  const robustSpend = frontierStatus === 'complete'
+    && isFrontierCurrent(frontierResult, committedParams, mode)
+    ? clientRobustSpendSentence(frontierResult)
+    : null;
+
+  return (
+    <div className="client-hud__narrative">
+      <p className="client-hud__sentence" aria-live="polite">
+        {successCount === null ? (
+          'Listening to a hundred thousand possible futures…'
+        ) : (
+          <React.Fragment>
+            In <span className="client-hud__number">
+              {successLow}
+              {successHigh !== successLow ? '–' + successHigh : ''}
+            </span> of 100 futures, your money outlives you.
+          </React.Fragment>
+        )}
+      </p>
+      {saturation && <p className="client-hud__subline">{saturation}</p>}
+      {failureYear !== null && (
+        <p className="client-hud__subline">
+          When it fails, it fails around year {failureYear}
+          {magnitudeStats?.medianShortfallYears !== null
+          && magnitudeStats?.medianShortfallYears !== undefined
+          && magnitudeStats.medianUnfundedObligation !== null
+            ? ' — typically short '
+              + magnitudeStats.medianShortfallYears.toFixed(1)
+              + ' years and '
+              + fmtUSDCompact(magnitudeStats.medianUnfundedObligation)
+              + '.'
+            : '.'}
+        </p>
+      )}
+      {stats && (
+        <p className="client-hud__subline">
+          Across the roughest 1 in 10 futures, the deepest peak-to-trough drop
+          averaged {fmtPct(stats.worstDecileMaxDD, 1)}.
+        </p>
+      )}
+      {robustSpend && <p className="client-hud__subline">{robustSpend}</p>}
+    </div>
+  );
+}
 
 export function ClientHud() {
   const stats = useSimStore((s) => s.stats);
@@ -32,56 +117,35 @@ export function ClientHud() {
   const setParams = useSimStore((s) => s.setParams);
   const applyPreset = useSimStore((s) => s.applyPreset);
   const toggleViewMode = useSimStore((s) => s.toggleViewMode);
-  const triStats = useSimStore((s) => s.triStats);
+  const modelComparison = useSimStore((s) => s.modelComparison);
   const magnitudeStats = useSimStore((s) => s.magnitudeStats);
+  const committedParams = useSimStore((s) => s.committedParams);
+  const frontierStatus = useFrontierStore((s) => s.status);
+  const frontierResult = useFrontierStore((s) => s.result);
 
-  const [presets, setPresets] = useState<ScenarioPreset[] | null>(null);
-  useEffect(() => {
+  const [presets, setPresets] = React.useState<ScenarioPreset[] | null>(null);
+  React.useEffect(() => {
     let cancelled = false;
-    void loadScenarioPresets().then((loaded) => {
-      if (!cancelled) setPresets(loaded);
-    });
+    void import('./presets').then(({ loadScenarioPresets }) =>
+      loadScenarioPresets().then((loaded) => {
+        if (!cancelled) setPresets(loaded);
+      }));
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const successCount =
-    stats === null ? null : Math.round(stats.successRate * 100);
-  const failureYear =
-    stats !== null && stats.medianFailureYear !== null
-      ? Math.round(stats.medianFailureYear)
-      : null;
-  const triRange = triStats ? successRateRange(triStats) : null;
-  const successLow = triRange ? Math.round(triRange.min * 100) : successCount;
-  const successHigh = triRange ? Math.round(triRange.max * 100) : successCount;
-
   return (
     <div className="client-hud">
-      <div className="client-hud__narrative">
-        <p className="client-hud__sentence" aria-live="polite">
-          {successCount === null ? (
-            'Listening to a hundred thousand possible futures…'
-          ) : (
-            <>
-              In <span className="client-hud__number">
-                {successLow}
-                {successHigh !== successLow ? `–${successHigh}` : ''}
-              </span> of 100 futures, your money outlives you.
-            </>
-          )}
-        </p>
-        {failureYear !== null && (
-          <p className="client-hud__subline">
-            When it fails, it fails around year {failureYear}
-            {magnitudeStats?.medianShortfallYears !== null &&
-            magnitudeStats?.medianShortfallYears !== undefined &&
-            magnitudeStats.medianUnfundedObligation !== null
-              ? ` — typically short ${magnitudeStats.medianShortfallYears.toFixed(1)} years and ${fmtUSDCompact(magnitudeStats.medianUnfundedObligation)}.`
-              : '.'}
-          </p>
-        )}
-      </div>
+      <ClientNarrative
+        stats={stats}
+        modelComparison={modelComparison}
+        magnitudeStats={magnitudeStats}
+        frontierStatus={frontierStatus}
+        frontierResult={frontierResult}
+        committedParams={committedParams}
+        mode={mode}
+      />
 
       <div className="client-hud__bottom">
         {presets !== null && presets.length > 0 && (
