@@ -25,6 +25,7 @@ function seedComplete() {
 }
 
 function resetStores() {
+  useSimStore.getState().commitParams();
   useFrontierStore.getState().clear();
   useFrontierStore.getState().setAdvisorLens('futures');
   useSimStore.setState({
