@@ -219,3 +219,52 @@ production compute graph and the visualization probe respectively.
 Physical-GPU frontier wall time is unmeasured; the SwiftShader compute probe
 validates production graph compilation and binding correctness, not hardware
 performance.
+
+## 10. Experience contract
+
+The advisor experience has three analytical lenses: Simulated futures,
+Robustness frontier, and Historical gauntlet. The frontier is started only by
+the explicit **Run robustness frontier** action. Opening its lens, changing a
+draft control, and rendering a client or advisor view remain non-triggers.
+
+Each plotted marker and each table row is an evaluated simulation point. A line
+may join measured points only to make the tested decision surface readable; it
+does not assert an interpolation, an untested result, or a prediction between
+points. A complete result reports the captured engine, seed, and analysis path
+count. Unbounded-high, infeasible-at-zero, budget-exhausted, stale, running,
+and error states remain explicit in place.
+
+“Robust spend” means the highest **tested** real monthly spending at which
+**every included model** reached at least 90 in 100 simulated futures. It is
+not a recommendation, a personal financial plan, a guarantee, or a model
+weighting scheme. When all included models reach the 100% success ceiling for
+the tested measure, client wording identifies that ceiling as a limit of the
+measure, not as certainty.
+
+The client and advisor views consume the same committed-input comparison and
+frontier artifacts. Client language may simplify the result into a natural
+frequency and its observed range; advisor language retains models, real-dollar
+units, tested-point status, and the limiting model. Neither surface may invent
+an additional result in presentation code.
+
+The decision-critical DOM surface is a peer of the canvas:
+
+- The chart has an SVG title and description, direct series labels, a 90%
+  target, and explicit current/robust reference lines.
+- The comparison and tested-point tables expose model, real monthly spending,
+  success, and measured status as ordinary semantic table cells.
+- Keyboard-reachable point controls synchronize focus with the matching plot
+  marker and expose the model, spend, success, and target status in their
+  accessible name. Color is duplicated by marker shape, dash, label, and table
+  symbol.
+
+The visual system uses Barlow Semi Condensed for interpretation and IBM Plex
+Mono for measured facts. GBM is glacial cyan and circular/solid; historical
+bootstrap is amber and square/dashed; Student-t(5) is periwinkle and
+triangular/dotted. Regime is reserved green with a diamond/dash encoding only;
+this amendment still authorizes no runtime regime producer. Interactive and
+data boundaries use the #606060 control line, decorative separation uses the
+#2e2e2e hairline, and the flat black field uses a low-contrast embedded SVG
+contour field rather than decorative gradients, glass, ambient shadows, or
+colored side stripes. Reduced motion shortens all motion to an effectively
+instant 0.01ms state change without hiding content.

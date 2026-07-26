@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { StatCardsView } from './StatCards.tsx';
@@ -215,3 +216,24 @@ const incompleteMarkup = clientMarkup({
   },
 });
 assert.doesNotMatch(incompleteMarkup, /Across all included models/);
+
+const visualCss = readFileSync('src/app/theme.css', 'utf8');
+const visualHtml = readFileSync('index.html', 'utf8');
+
+assert.match(visualHtml, /Barlow\+Semi\+Condensed/);
+assert.match(visualHtml, /IBM\+Plex\+Mono/);
+assert.doesNotMatch(visualHtml, /family=Inter/);
+assert.match(visualCss, /--control-line:\s*#606060/);
+assert.match(visualCss, /--frontier-gbm:/);
+assert.match(visualCss, /--frontier-bootstrap:/);
+assert.match(visualCss, /--frontier-fattail:/);
+assert.match(visualCss, /data:image\/svg\+xml/);
+assert.doesNotMatch(visualCss, /repeating-linear-gradient/);
+assert.doesNotMatch(visualCss, /backdrop-filter/);
+assert.match(visualCss, /@media \(prefers-reduced-motion: reduce\)/);
+assert.match(visualCss, /\.frontier-point-button:focus-visible/);
+assert.match(visualCss, /\.frontier-panel:has\(\.frontier-panel__idle\)/);
+assert.match(visualCss, /\.gauntlet-panel--advisor\s*\{\s*z-index:\s*7/);
+assert.match(visualCss, /\.model-triangulation__row > :last-child/);
+assert.match(visualCss, /@media \(max-width: 720px\)/);
+assert.match(visualCss, /@media \(max-width: 600px\)/);

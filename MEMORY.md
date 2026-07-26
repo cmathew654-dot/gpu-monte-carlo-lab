@@ -4,7 +4,7 @@ scope: GPU Monte Carlo Lab
 owner: Cyril
 updated_at: 2026-07-26
 verified_at: 2026-07-26
-verified_against: git:9865bfe
+verified_against: git:832b7e0 + A5 Task 5 working tree
 review_by: 2026-08-09
 ---
 
@@ -89,8 +89,26 @@ Mutable operational handoff only.
 - Hardware boundary: Physical-GPU frontier wall time is unmeasured; the
   SwiftShader compute probe validates production graph compilation and binding
   correctness, not hardware performance.
-- Next action: Implement the A5 experience plan, then begin Amendment A6 only
-  after A5 is green.
+- Next action: begin Amendment A6 Regime-t lens work.
+
+### C-005 — Amendment A5: robustness frontier experience
+
+- Status: completed
+- Outcome sought: a single, accessible advisor decision surface for simulated
+  futures, the tested three-model robustness frontier, and the named historical
+  gauntlet, with calm client wording that never turns a tested comparison into
+  advice or certainty.
+- Scope: experience commit range 6a24075..HEAD, ending with this Task 5
+  visual-system finalization. The surface replaces Inter/JetBrains Mono with
+  Barlow Semi Condensed and IBM Plex
+  Mono, adds exact #606060 interactive/data boundaries, explicit plot
+  encodings, responsive frontier overflow, reduced motion, and tested-point
+  keyboard focus.
+- Verified outcome: focused npm run test:frontier, npx tsc -b, npm run lint,
+  and npm run build pass on 2026-07-26. The production build transformed 150
+  modules in 5.73s. This is focused A5 experience evidence; it is not a claim
+  that the full baseline was rerun.
+- Next action: begin Amendment A6 Regime-t lens work.
 
 ## Verified imported state
 
