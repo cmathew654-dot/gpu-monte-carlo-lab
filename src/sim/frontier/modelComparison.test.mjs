@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { modelOutcome, orderedModelComparison } from './modelComparison.ts';
 
 const basis = { pathCount: 100_000, seed: 42 };
@@ -49,7 +50,22 @@ assert.equal('computedAt' in ordered.models[0].stats, false);
 assert.equal('computedAt' in ordered.models[0].magnitude, false);
 assert.equal(ordered.pathCount, 100_000);
 assert.equal(ordered.seed, 42);
+
+const partial = new Map();
+partial.set('bootstrap', bootstrap);
+partial.set('gbm', gbm);
 assert.throws(
-  () => orderedModelComparison(new Map([['gbm', gbm]]), basis),
+  () => orderedModelComparison(partial, basis),
   /complete model set/i,
 );
+partial.set('fattail', fattail);
+assert.deepEqual(
+  orderedModelComparison(partial, basis).models.map(({ model }) => model),
+  ['gbm', 'bootstrap', 'fattail'],
+);
+
+const frozenWorker = readFileSync(
+  new URL('../../src/ui/cpuSim.worker.ts', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(frozenWorker, /modelComparison|frontier/i);

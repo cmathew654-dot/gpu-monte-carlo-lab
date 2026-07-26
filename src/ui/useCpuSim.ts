@@ -29,6 +29,12 @@ import {
   type SimParams,
   type TriStats,
 } from '../store/simStore';
+import {
+  modelOutcome,
+  orderedModelComparison,
+  type ModelOutcome,
+  type ShippedModelKey,
+} from '../sim/frontier/modelComparison';
 import { secondaryModels } from '../sim/model/triangulation';
 import type {
   CpuSimRequest,
@@ -47,6 +53,19 @@ const SWR_TARGET = 0.9;
 const SWR_TOLERANCE = 0.005; // success ∈ [89.5%, 90.5%] converges early
 const SWR_MAX_BISECTIONS = 8; // spec §2.5: ≤ 8 re-sims
 const SWR_MAX_BRACKET = 100_000; // $/mo — beyond this SWR is unconstrained
+
+function outcomeFromWorker(
+  model: ShippedModelKey,
+  result: CpuSimResultMessage,
+): ModelOutcome {
+  if (!result.magnitude) {
+    throw new Error(`CPU ${model} result omitted magnitude statistics`);
+  }
+  return modelOutcome(model, {
+    stats: result.stats,
+    magnitude: result.magnitude,
+  });
+}
 
 export function useCpuSim(): CpuSimStatus {
   const mode = useSimStore((s) => s.mode);
@@ -185,12 +204,15 @@ export function useCpuSim(): CpuSimStatus {
         setStats,
         setMagnitudeStats,
         setTriStats,
+        setModelComparison,
       } = useSimStore.getState();
       markRecomputing(true);
       setStatus((s) => ({ ...s, error: null }));
       try {
         const base = await runJob(params);
         if (disposed || token !== tokenRef.current) return;
+        const outcomes = new Map<ShippedModelKey, ModelOutcome>();
+        outcomes.set(params.model, outcomeFromWorker(params.model, base));
         setStats(base.stats);
         // AMENDMENT A3: magnitude-of-failure metrics ride the same message.
         setMagnitudeStats(base.magnitude ?? null);
@@ -206,8 +228,12 @@ export function useCpuSim(): CpuSimStatus {
           const secondary = await runJob({ ...params, model });
           if (disposed || token !== tokenRef.current) return;
           successRates[model] = secondary.stats.successRate;
+          outcomes.set(model, outcomeFromWorker(model, secondary));
         }
+        if (disposed || token !== tokenRef.current) return;
+        const comparison = orderedModelComparison(outcomes, params);
         setTriStats({ successRates, computedAt: 0 });
+        setModelComparison(comparison);
 
         const swr = await searchSafeWithdrawal(params, token);
         if (disposed || token !== tokenRef.current) return;

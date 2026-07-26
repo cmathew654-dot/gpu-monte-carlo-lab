@@ -51,8 +51,17 @@ import {
 } from '../sim/model/bootstrap';
 import { runSimulation } from '../sim/runSimulation';
 import { recomputeStats } from '../sim/stats/recomputeStats';
-import { computeStats } from '../sim/stats/computeStats';
+import {
+  computeStats,
+  type ComputedStats,
+} from '../sim/stats/computeStats';
 import { secondaryModels } from '../sim/model/triangulation';
+import {
+  modelOutcome,
+  orderedModelComparison,
+  type ModelOutcome,
+  type ShippedModelKey,
+} from '../sim/frontier/modelComparison';
 import { runSnapHistPassesAndRead } from '../sim/stats/snapReadback';
 import { readHeroPathIndex } from '../sim/stats/heroPath';
 import {
@@ -125,23 +134,27 @@ export function SimDriver() {
         setHeroPathIndex,
         setMagnitudeStats,
         setTriStats,
+        setModelComparison,
       } = useSimStore.getState();
       markRecomputing(true);
       try {
         await runSimulation({ renderer, params, bootstrapData, signal });
         if (!isCurrent(myToken)) return;
-        const stats = withSafeWithdrawal
-          ? await recomputeStats(renderer, {
+        let primaryComputed: ComputedStats | null = null;
+        let stats;
+        if (withSafeWithdrawal) {
+          stats = await recomputeStats(renderer, {
               params,
               bootstrapData,
               signal,
               withSafeWithdrawal: true,
               onMagnitudeStats: setMagnitudeStats,
-            })
-          : await computeStats(renderer, { params, signal }).then((computed) => {
-              setMagnitudeStats(computed.magnitude);
-              return computed.stats;
             });
+        } else {
+          primaryComputed = await computeStats(renderer, { params, signal });
+          setMagnitudeStats(primaryComputed.magnitude);
+          stats = primaryComputed.stats;
+        }
         if (!isCurrent(myToken)) return;
         setStats(stats);
         // viz2: per-snapshot distribution readback (12,288 B — histograms,
@@ -175,12 +188,20 @@ export function SimDriver() {
         }
 
         if (!preview && !withSafeWithdrawal) {
+          if (!primaryComputed) {
+            throw new Error('SimDriver: primary statistics missing');
+          }
           const successRates: TriStats['successRates'] = {
             gbm: 0,
             bootstrap: 0,
             fattail: 0,
           };
+          const outcomes = new Map<ShippedModelKey, ModelOutcome>();
           successRates[params.model] = stats.successRate;
+          outcomes.set(
+            params.model,
+            modelOutcome(params.model, primaryComputed),
+          );
           for (const model of secondaryModels(params.model)) {
             const secondaryParams = { ...params, model };
             await runSimulation({
@@ -195,6 +216,7 @@ export function SimDriver() {
             });
             if (!isCurrent(myToken)) return;
             successRates[model] = secondary.stats.successRate;
+            outcomes.set(model, modelOutcome(model, secondary));
           }
 
           // Secondary runs overwrite shared GPU buffers. Restore the selected
@@ -206,7 +228,9 @@ export function SimDriver() {
             signal,
           });
           if (!isCurrent(myToken)) return;
+          const comparison = orderedModelComparison(outcomes, params);
           setTriStats({ successRates, computedAt: 0 });
+          setModelComparison(comparison);
         }
       } catch (err) {
         // Superseded work is not an error — the newer run owns the store.
