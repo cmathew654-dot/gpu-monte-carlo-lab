@@ -255,6 +255,26 @@ Mutable operational handoff only.
 - Source and merged commit: `1168d58`.
 - Next action: deployment remains a separate explicit decision.
 
+### C-010 — Portfolio-grade pilot proof ladder
+
+- Status: approved design committed for written review; not implemented.
+- Outcome sought: move from a technically credible portfolio product to an
+  evidence-bearing engine, then to a directionally validated advisor pilot
+  instrument without expanding into a regulated planning platform.
+- Milestone 1: a reproducible physical-WebGPU benchmark and recovery system on
+  the RTX 3080 Ti, with sanitized raw evidence, CPU/GPU correctness gates,
+  cancellation/device-loss drills, rendering measurements, and one secondary
+  portability attempt.
+- Milestone 2: one frozen synthetic decision case and three-to-five structured
+  professional sessions, with uncoached comprehension gates, anonymized
+  findings, repairs for the three highest-severity failures, and at least one
+  post-repair verification.
+- Boundaries: no new return model, frozen simulation-contract change, client
+  data storage, authentication, or commercial-platform scope is authorized.
+- Canonical design: `docs/superpowers/specs/2026-07-27-portfolio-grade-pilot-evidence-design.md`.
+- Next action: Cyril reviews the written spec; implementation planning begins
+  only after explicit approval of that file.
+
 ## Verified imported state
 
 Wave 1 is present in the source snapshot:
