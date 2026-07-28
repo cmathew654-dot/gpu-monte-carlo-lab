@@ -88,9 +88,9 @@ The manifest freezes:
 
 Interactive GPU cells cover GBM, historical block bootstrap, and Student-t(5)
 at 10,000, 100,000, and 1,000,000 paths. The complete four-model Frontier uses
-the product's supported 10,000-path analysis count. CPU fallback covers the
-supported 10,000- and 100,000-path cells; omission of a one-million-path CPU
-run is explicit rather than silently mixed into GPU evidence.
+the product's supported 10,000-path analysis count. CPU fallback covers its
+product-capped 10,000-path cells; higher CPU path counts are excluded explicitly
+rather than silently mixed into GPU evidence.
 
 ### Measurement protocol
 
@@ -258,8 +258,10 @@ Milestone 2 passes only when:
 - After the limitation exercise, every participant can state that the output is
   a tested model comparison rather than a guarantee, prediction, confidence
   interval, or personalized recommendation.
-- The three highest-severity workflow failures are repaired or explicitly
-  rejected with documented rationale.
+- Up to the three highest-severity observed workflow failures are repaired or
+  explicitly rejected with documented rationale. If fewer than three distinct
+  evidence-backed failures are observed, disposition every observed failure
+  and do not invent additional issues to fill a quota.
 - At least one post-repair session verifies that a targeted failure does not
   recur. This session may count among the three required participants only if
   that participant did not see the unrepaired workflow.
@@ -278,7 +280,8 @@ synthetic personas, or model-generated feedback.
   authorization and a green release gate.
 - One-page canonical case brief and facilitator protocol.
 - Observer rubric and anonymized findings report.
-- Before/after record for the three highest-severity repairs.
+- Before/after record for every selected repair, up to the three
+  highest-severity observed failures.
 - One post-repair verification record.
 - Five-minute narrated product demonstration.
 - Commercial-readiness gap analysis covering advice boundary, privacy,

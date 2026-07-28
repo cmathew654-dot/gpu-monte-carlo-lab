@@ -257,7 +257,7 @@ Mutable operational handoff only.
 
 ### C-010 — Portfolio-grade pilot proof ladder
 
-- Status: approved design committed for written review; not implemented.
+- Status: design approved; two executable milestone plans complete; not implemented.
 - Outcome sought: move from a technically credible portfolio product to an
   evidence-bearing engine, then to a directionally validated advisor pilot
   instrument without expanding into a regulated planning platform.
@@ -267,13 +267,17 @@ Mutable operational handoff only.
   portability attempt.
 - Milestone 2: one frozen synthetic decision case and three-to-five structured
   professional sessions, with uncoached comprehension gates, anonymized
-  findings, repairs for the three highest-severity failures, and at least one
-  post-repair verification.
+  findings, dispositions for up to the three highest-severity observed
+  failures, and at least one post-repair verification.
 - Boundaries: no new return model, frozen simulation-contract change, client
   data storage, authentication, or commercial-platform scope is authorized.
 - Canonical design: `docs/superpowers/specs/2026-07-27-portfolio-grade-pilot-evidence-design.md`.
-- Next action: Cyril reviews the written spec; implementation planning begins
-  only after explicit approval of that file.
+- Execution plans: `docs/superpowers/plans/2026-07-27-physical-gpu-evidence.md`
+  followed by `docs/superpowers/plans/2026-07-27-advisor-decision-proof-pilot.md`.
+- Planning correction: CPU fallback evidence is limited to the product-capped
+  10,000-path cells; higher CPU path counts are explicitly excluded.
+- Design commit: `a7d9130`.
+- Next action: choose an execution mode and implement Milestone 1 first.
 
 ## Verified imported state
 
