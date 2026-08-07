@@ -7,7 +7,12 @@
  * vertex rides the route at progress t = snap/(snapsTotal−1):
  *
  *   pos = route[routeIdx][t] + normal[t] × (LIFT + offset)
- *   offset = clamp((log10(wealth) − log10(p50 wealth at snap)) × K, −LO, +HI)
+ *   offset = softknee((log10(wealth) − log10(p50 wealth at snap)) × K)
+ *
+ * where softknee is a per-side tanh (CAP × tanh(raw / CAP), CAP = OFFSET_HI
+ * above the median and OFFSET_LO below). Same caps as the old clamp, but
+ * approached asymptotically — a hard clamp laminated the extremes into flat
+ * sheets at ±CAP. Slope is 1 at raw = 0 on both sides, so the join is smooth.
  *
  * Winners ride ABOVE the terrain on ridgelines; strugglers sink toward the
  * surface. v5.3: the median (hero) path is forced onto the CENTRAL route
@@ -206,10 +211,17 @@ export function buildMountainTrailNodes() {
 
   // --- wealth-mapped offset along the terrain normal -----------------------
   const lw = wealth.max(1.0).log().mul(0.43429448190325176);
-  const offset = lw
-    .sub(medLog)
-    .mul(OFFSET_K)
-    .clamp(OFFSET_LO, OFFSET_HI);
+  // Soft-knee, not clamp: a hard clamp piled every extreme path onto the
+  // same ±CAP surface, laminating the braid into flat sheets at the edges.
+  // CAP × tanh(raw / CAP) keeps the same caps as asymptotes and has slope 1
+  // at raw = 0, so the two sides join smoothly across the median.
+  // FLOAT-only select (r185 rule) — both branches are float.
+  const raw = lw.sub(medLog).mul(OFFSET_K);
+  const offset = select(
+    raw.greaterThanEqual(0.0),
+    float(OFFSET_HI).mul(raw.div(OFFSET_HI).tanh()),
+    float(OFFSET_LO).mul(raw.div(OFFSET_LO).tanh()),
+  );
   // v5.2 lateral spread: direction = tangent × normal (lies in the slope
   // plane, perpendicular to the route). Per-path hash offset + weave.
   const lateral = p1
