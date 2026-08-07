@@ -15,9 +15,9 @@ var<private> output : OutputStruct;
 
 struct objectStruct {
 	nodeUniform2 : u32,
+	nodeUniform7 : f32,
 	nodeUniform8 : f32,
-	nodeUniform9 : f32,
-	nodeUniform12 : mat4x4<f32>
+	nodeUniform11 : mat4x4<f32>
 };
 @binding( 0 ) @group( 1 )
 var<uniform> object : objectStruct;
@@ -25,7 +25,7 @@ var<uniform> object : objectStruct;
 // vars
 var<private> DiffuseColor : vec4<f32>;
 var<private> Output : vec4<f32>;
-var<private> nodeVar18 : vec4<f32>;
+var<private> nodeVar17 : vec4<f32>;
 
 // codes
 
@@ -37,13 +37,13 @@ fn main( @location( 0 ) nodeVarying3 : vec4<f32> ) -> OutputStruct {
 	// code
 
 	DiffuseColor = nodeVarying3;
-	DiffuseColor.w = ( DiffuseColor.w * object.nodeUniform9 );
-	nodeVar18 = max( vec4<f32>( DiffuseColor.xyz, DiffuseColor.w ), vec4<f32>( 0.0 ) );
-	Output = nodeVar18;
+	DiffuseColor.w = ( DiffuseColor.w * object.nodeUniform8 );
+	nodeVar17 = max( vec4<f32>( DiffuseColor.xyz, DiffuseColor.w ), vec4<f32>( 0.0 ) );
+	Output = nodeVar17;
 
 	// result
 
-	output.color = nodeVar18;
+	output.color = nodeVar17;
 
 	return output;
 

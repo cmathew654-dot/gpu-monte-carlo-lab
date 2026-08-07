@@ -20,6 +20,8 @@ import { routeDown } from './mountainBuffers';
 import { getStorageAttribute } from '../../sim/buffers';
 import type { TerrainData } from './terrain';
 
+const EMBER_PATH_STRIDE = 8;
+
 export function MountainEmbers({ data }: { data: TerrainData }) {
   const [pathCount, setPathCount] = useState(0);
   const gl = useThree((s) => s.gl);
@@ -49,15 +51,15 @@ export function MountainEmbers({ data }: { data: TerrainData }) {
         state.previewMode ? PREVIEW_PATH_COUNT : p.pathCount,
         p.horizonYears,
       );
-      // v5.3: same thinning as the trails — embers and trails describe the
-      // same rendered subset (an ember must never float off a hidden trail).
+      // Keep embers on a 4× sparser subset of the rendered trails.
       const lineStride =
         lineStrideForBudget(plan, maxVerts) * MOUNTAIN_LINE_DENSITY;
-      const linePaths = Math.floor(plan.paths / lineStride);
+      const emberStride = lineStride * EMBER_PATH_STRIDE;
+      const linePaths = Math.floor(plan.paths / emberStride);
       // eslint-disable-next-line react-hooks/immutability
       nodes.uniforms.uSpritesPerPath.value = plan.perPath;
       nodes.uniforms.uSnapDecimate.value = plan.decimate;
-      nodes.uniforms.uPathSubset.value = plan.subset * lineStride;
+      nodes.uniforms.uPathSubset.value = plan.subset * emberStride;
       nodes.uniforms.uSnapsTotal.value = plan.snapsTotal;
       setPathCount(linePaths);
     };

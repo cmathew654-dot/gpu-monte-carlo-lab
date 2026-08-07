@@ -20,6 +20,7 @@ import {
   smoothstep,
   uint,
   uniform,
+  uv,
   vec2,
   vec3,
   vec4,
@@ -33,7 +34,8 @@ import { LAT_SPREAD, LAT_WEAVE_AMP } from './trailStyle';
 /** Death-slot ember color (the cone's failure red). */
 const EMBER_RED = /*#__PURE__*/ color(0xfb2c36).mul(0.9);
 /** Ember sprite size (world units). */
-const EMBER_SIZE = 0.09;
+const EMBER_SIZE = 0.18;
+const EMBER_SURFACE_LIFT = 0.02;
 /** Reveal fraction over which the ember slides + fades (cone's drop span). */
 const EMBER_DROP_SPAN = 0.2;
 const REVEAL_FEATHER = 0.02;
@@ -138,13 +140,15 @@ export function buildMountainEmberNodes() {
         .sin()
         .mul(LAT_WEAVE_AMP),
     );
-  const worldPos = base
-    .add(nrm.mul(0.15)) // ignite just off the surface
-    .add(lateral.mul(latOffset))
+  const restingPos = base.add(lateral.mul(latOffset));
+  const worldPos = restingPos
+    .add(nrm.mul(EMBER_SURFACE_LIFT))
     .add(down.mul(dropT.pow(1.4).mul(SLIDE_DIST)));
+  const radial = smoothstep(0.18, 0.44, uv().sub(0.5).length()).oneMinus();
   const alpha = float(0.9)
     .mul(vis)
     .mul(dropT.mul(0.85).oneMinus())
+    .mul(radial)
     .mul(select(isFailed, float(1.0), float(0.0)));
 
   return {

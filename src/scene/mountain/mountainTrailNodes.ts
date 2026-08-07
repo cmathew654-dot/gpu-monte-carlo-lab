@@ -63,7 +63,7 @@ import {
 } from './trailStyle';
 
 /** Thread alpha at full reveal (mountain trails carry the whole scene). */
-const TRAIL_ALPHA = 0.16;
+const TRAIL_ALPHA = 0.045;
 /** Reveal feather — same value as the cone/traj graphs. */
 const REVEAL_FEATHER = 0.02;
 
@@ -271,3 +271,4 @@ export function buildMountainTrailNodes() {
     colorNode: varying(vec4(rgb, alpha)),
   };
 }
+

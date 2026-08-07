@@ -72,10 +72,13 @@ function ClientGauntlet() {
               <span className="gauntlet-chip__year data-label">
                 {status.year}
               </span>
-              <span className="gauntlet-chip__symbol" aria-hidden="true">
-                {status.symbol}
+              <span className="gauntlet-chip__detail">
+                {status.tone === 'failed'
+                  ? status.detail.replace('failed year', 'failed yr')
+                  : status.tone === 'survived'
+                    ? 'passed'
+                    : 'still going *'}
               </span>
-              <span className="gauntlet-chip__detail">{status.detail}</span>
               <span className="sr-only">
                 {status.year + ': ' + status.detail}
               </span>
@@ -170,3 +173,5 @@ export function GauntletPanel() {
   const viewMode = useSimStore((state) => state.viewMode);
   return viewMode === 'client' ? <ClientGauntlet /> : <AdvisorGauntlet />;
 }
+
+

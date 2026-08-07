@@ -41,8 +41,14 @@ const CLIENT_SWAY_AMPLITUDE = 0.45;
 const MOUNTAIN_SWAY_SPEED = 0.06;
 const MOUNTAIN_SWAY_AMPLITUDE = 0.3;
 const MOUNTAIN_ELEVATION = 0.15; // rad above the XZ plane — a low look up
+const MOUNTAIN_ELEVATION_MIN = 0.08;
+const MOUNTAIN_ELEVATION_MAX = 0.60;
 const MOUNTAIN_RADIUS_MIN = 15;
 const MOUNTAIN_RADIUS_MAX = 60;
+const MOUNTAIN_DRAG_AZIMUTH = 0.005;
+const MOUNTAIN_DRAG_ELEVATION = 0.003;
+const MOUNTAIN_AUTO_RESUME_DELAY = 4000;
+const MOUNTAIN_AUTO_RESUME_RATE = 1.25;
 /** Base elevation above the XZ plane. */
 const BASE_ELEVATION = 0.32; // ~18°
 /** Parallax amplitude (spec: ±5°). */
@@ -62,6 +68,20 @@ export function CameraRig() {
   const radius = useRef(RADIUS_START);
   // Damped pointer parallax offsets (radians).
   const parallax = useRef({ x: 0, y: 0 });
+  const mountainAutoSway = useRef(0);
+  const mountainOrbit = useRef({
+    initialized: false,
+    baseAzimuth: 0,
+    targetAzimuth: 0,
+    baseElevation: MOUNTAIN_ELEVATION,
+    targetElevation: MOUNTAIN_ELEVATION,
+    autoBlend: 1,
+    holdUntil: 0,
+    pointerId: -1,
+    dragging: false,
+    lastX: 0,
+    lastY: 0,
+  });
 
   // Wheel zoom on the canvas element. passive:false so the page doesn't
   // scroll while the user inspects the tail.
@@ -73,7 +93,66 @@ export function CameraRig() {
       radius.current = Math.min(Math.max(next, RADIUS_MIN), RADIUS_MAX);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+
+    const isMountainClient = () =>
+      useSimStore.getState().viewMode === 'client' &&
+      getTerrainStatus() === 'ready';
+    const onPointerDown = (e: PointerEvent) => {
+      if (!isMountainClient() || e.button !== 0) return;
+      const orbit = mountainOrbit.current;
+      const sway = mountainAutoSway.current;
+      if (!orbit.initialized) {
+        orbit.initialized = true;
+        orbit.baseAzimuth = sway;
+        orbit.targetAzimuth = sway;
+      } else {
+        orbit.baseAzimuth += sway * orbit.autoBlend;
+        orbit.targetAzimuth = orbit.baseAzimuth;
+      }
+      orbit.autoBlend = 0;
+      orbit.dragging = true;
+      orbit.pointerId = e.pointerId;
+      orbit.lastX = e.clientX;
+      orbit.lastY = e.clientY;
+      orbit.holdUntil = Number.POSITIVE_INFINITY;
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      const orbit = mountainOrbit.current;
+      if (!orbit.dragging || orbit.pointerId !== e.pointerId) return;
+      orbit.targetAzimuth += (e.clientX - orbit.lastX) * MOUNTAIN_DRAG_AZIMUTH;
+      orbit.targetElevation -=
+        (e.clientY - orbit.lastY) * MOUNTAIN_DRAG_ELEVATION;
+      orbit.targetElevation = Math.min(
+        MOUNTAIN_ELEVATION_MAX,
+        Math.max(MOUNTAIN_ELEVATION_MIN, orbit.targetElevation),
+      );
+      orbit.lastX = e.clientX;
+      orbit.lastY = e.clientY;
+      e.preventDefault();
+    };
+    const endDrag = (e: PointerEvent) => {
+      const orbit = mountainOrbit.current;
+      if (!orbit.dragging || orbit.pointerId !== e.pointerId) return;
+      orbit.dragging = false;
+      orbit.pointerId = -1;
+      orbit.holdUntil = performance.now() + MOUNTAIN_AUTO_RESUME_DELAY;
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    };
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('lostpointercapture', endDrag);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', endDrag);
+      el.removeEventListener('pointercancel', endDrag);
+      el.removeEventListener('lostpointercapture', endDrag);
+    };
   }, [gl]);
 
   useFrame((state, delta) => {
@@ -94,15 +173,46 @@ export function CameraRig() {
     let elevation: number;
     let effectiveRadius = radius.current;
     if (mountain) {
+      const orbit = mountainOrbit.current;
+      if (!orbit.initialized) {
+        const sway = mountainAutoSway.current;
+        orbit.initialized = true;
+        orbit.baseAzimuth = sway;
+        orbit.targetAzimuth = sway;
+      }
+      const now = performance.now();
+      const holdingAuto = orbit.dragging || now < orbit.holdUntil;
+      if (holdingAuto) {
+        orbit.autoBlend = 0;
+      } else {
+        orbit.autoBlend +=
+          (1 - orbit.autoBlend) *
+          (1 - Math.exp(-delta * MOUNTAIN_AUTO_RESUME_RATE));
+      }
+      orbit.baseAzimuth +=
+        (orbit.targetAzimuth - orbit.baseAzimuth) *
+        (1 - Math.exp(-delta * DAMPING));
+      orbit.baseElevation +=
+        (orbit.targetElevation - orbit.baseElevation) *
+        (1 - Math.exp(-delta * DAMPING));
       radius.current = Math.min(
         Math.max(radius.current, MOUNTAIN_RADIUS_MIN),
         MOUNTAIN_RADIUS_MAX,
       );
-      azimuth =
+      mountainAutoSway.current =
         Math.sin(clock.elapsedTime * MOUNTAIN_SWAY_SPEED) *
-          MOUNTAIN_SWAY_AMPLITUDE +
+        MOUNTAIN_SWAY_AMPLITUDE;
+      azimuth =
+        orbit.baseAzimuth +
+        mountainAutoSway.current * orbit.autoBlend +
         parallax.current.x;
-      elevation = MOUNTAIN_ELEVATION + parallax.current.y * 0.5;
+      elevation = Math.min(
+        MOUNTAIN_ELEVATION_MAX,
+        Math.max(
+          MOUNTAIN_ELEVATION_MIN,
+          orbit.baseElevation + parallax.current.y * 0.5,
+        ),
+      );
       if ('isPerspectiveCamera' in camera) {
         effectiveRadius = mountainFitRadius(
           radius.current,

@@ -15,7 +15,7 @@ export const TRAIL_LIFT = 0.1;
 export const OFFSET_K = 1.0;
 /** Offset clamp: winners ride ≤ +1.4 above (was 2.0), strugglers sink to
  * the surface. */
-export const OFFSET_HI = 1.4;
+export const OFFSET_HI = 0.35;
 export const OFFSET_LO = -0.06;
 /** Lateral spread ACROSS the face (world units, full width = LAT_SPREAD).
  * v5.3: 1.7→3.5 — "spread but not nearly enough". The braid now spans a

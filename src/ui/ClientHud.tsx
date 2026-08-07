@@ -260,10 +260,11 @@ export function ClientHud() {
           committedParams={committedParams}
           mode={mode}
         />
-        <GauntletPanel />
       </div>
 
       <div className="client-hud__bottom">
+        <GauntletPanel />
+
         {presets !== null && presets.length > 0 && (
           <nav className="client-hud__presets" aria-label="Scenario presets">
             {presets.map((p) => (
@@ -321,3 +322,5 @@ export function ClientHud() {
     </div>
   );
 }
+
+

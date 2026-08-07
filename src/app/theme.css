@@ -944,12 +944,37 @@ body,
 }
 
 .client-hud__top {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
   width: 100%;
   min-height: 0;
+}
+
+.client-hud__top::before,
+.client-hud__bottom::before {
+  position: absolute;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+  inset: -34px -96px;
+}
+
+.client-hud__top::before {
+  background: radial-gradient(ellipse closest-side at center, rgba(2, 4, 10, 0.8) 0%, rgba(2, 4, 10, 0.45) 55%, transparent 98%);
+}
+
+.client-hud__bottom::before {
+  background: radial-gradient(ellipse closest-side at center, rgba(2, 4, 10, 0.8) 0%, rgba(2, 4, 10, 0.45) 55%, transparent 98%);
+}
+
+/* The A5 contour field is an advisor-surface texture; over the client
+ * mountain it reads as stray lines across the scene and the copy. */
+.app-shell:has(.client-hud)::after {
+  display: none;
 }
 
 .client-hud__narrative {
@@ -1121,10 +1146,12 @@ body,
   font-family: var(--font-ui);
   font-weight: 300;
   font-size: clamp(15px, 1.4vw, 19px);
-  color: var(--fg-dim);
+  color: #b6bfcc;
 }
 
 .client-hud__bottom {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1389,11 +1416,11 @@ body,
 
 .gauntlet-panel--client .gauntlet-panel__note,
 .gauntlet-panel--client .gauntlet-panel__loading {
-  text-align: center;
+  text-align: left;
 }
 
 .gauntlet-panel--client .gauntlet-panel__heading {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .gauntlet-panel--client .gauntlet-panel__heading h2 {
@@ -1426,10 +1453,6 @@ body,
   border: 0;
   border-inline-end: 1px solid #343c48;
   border-radius: 0;
-}
-
-.gauntlet-panel--client .gauntlet-chip:last-child {
-  border-inline-end: 0;
 }
 
 .gauntlet-panel--client .gauntlet-chip::before {
@@ -1755,13 +1778,6 @@ select {
   background: var(--panel-black);
   border-color: var(--hairline);
   box-shadow: none;
-}
-
-/* The client treatment is deliberately an evidence line, not a panel. This
- * more-specific late override protects it from the shared panel skin above. */
-.gauntlet-panel.gauntlet-panel--client {
-  background: transparent;
-  border-color: transparent;
 }
 
 /* CpuFallback already has a capability badge; ClientHud has its own at the
@@ -2568,6 +2584,154 @@ select {
   }
 }
 
+.gauntlet-panel--client {
+  position: static;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: min(92vw, 1040px);
+  padding: 14px 18px 12px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  pointer-events: auto;
+}
+
+.gauntlet-panel--client .gauntlet-panel__heading {
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.gauntlet-panel--client .gauntlet-panel__heading h2 {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.gauntlet-panel--client .gauntlet-panel__heading > .data-label {
+  display: block;
+  color: #8f96a3;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.gauntlet-panel--client .gauntlet-chips {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.gauntlet-panel--client .gauntlet-chip {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 28px;
+  padding: 7px 12px;
+  background: #111111;
+  border: 1px solid #2e2e2e;
+  border-radius: 4px;
+}
+
+.gauntlet-panel--client .gauntlet-chip::before {
+  position: static;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin: 0;
+}
+
+.gauntlet-panel--client .gauntlet-chip__year {
+  padding: 0;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.gauntlet-panel--client .gauntlet-chip__detail {
+  display: inline;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.gauntlet-panel--client .gauntlet-chip--failed .gauntlet-chip__detail {
+  color: #ff7076;
+}
+
+.gauntlet-panel--client .gauntlet-chip--exhausted .gauntlet-chip__detail {
+  color: #e1c26e;
+}
+
+.gauntlet-panel--client .gauntlet-chip--survived .gauntlet-chip__detail {
+  color: #72d6ad;
+}
+
+.gauntlet-panel--client .gauntlet-panel__narrative {
+  margin: 12px 0 0;
+  color: #c3cad4;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.gauntlet-panel--client .gauntlet-panel__note {
+  display: block;
+  margin: 6px 0 0;
+  color: #8f96a3;
+  font-size: 10px;
+  text-align: left;
+}
+
+.gauntlet-panel--client .gauntlet-panel__loading {
+  margin: 0;
+  color: #8f96a3;
+  font-size: 10px;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .gauntlet-panel--client {
+    width: calc(100vw - 24px);
+  }
+}
+
+.client-hud__model-basis,
+.client-hud__plan-basis {
+  animation: client-hud-rise 460ms ease-out 200ms both;
+}
+
+.client-hud__sentence {
+  animation: client-hud-rise 460ms ease-out 700ms both;
+}
+
+.client-hud__subline {
+  animation: client-hud-rise 460ms ease-out 1100ms both;
+}
+
+.client-hud__bottom > * {
+  animation: client-hud-rise 460ms ease-out 1500ms both;
+}
+
+@keyframes client-hud-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2576,5 +2740,17 @@ select {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-hud__model-basis,
+  .client-hud__plan-basis,
+  .client-hud__sentence,
+  .client-hud__subline,
+  .client-hud__bottom > * {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
   }
 }

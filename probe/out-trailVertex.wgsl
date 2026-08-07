@@ -277,7 +277,7 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 
 	}
 
-	positionLocal = ( ( mix( nodeVar22, nodeVar24, nodeVar25 ) + ( nodeVar26 * vec3<f32>( ( ( 0.1 + clamp( ( ( ( log( max( nodeVar27, 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_994.value[ nodeVar28 ] ) * 1.0 ), -0.06, 1.4 ) ) + nodeVar29 ) ) ) ) + ( normalize( cross( ( nodeVar24 - nodeVar22 ), nodeVar26 ) ) * vec3<f32>( nodeVar30 ) ) );
+	positionLocal = ( ( mix( nodeVar22, nodeVar24, nodeVar25 ) + ( nodeVar26 * vec3<f32>( ( ( 0.1 + clamp( ( ( ( log( max( nodeVar27, 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_994.value[ nodeVar28 ] ) * 1.0 ), -0.06, 0.35 ) ) + nodeVar29 ) ) ) ) + ( normalize( cross( ( nodeVar24 - nodeVar22 ), nodeVar26 ) ) * vec3<f32>( nodeVar30 ) ) );
 	nodeVar37 = ( nodeVar10 && ( nodeVar28 == nodeVar13 ) );
 
 	if ( ( nodeVar5 && ( ! nodeVar37 ) ) ) {
@@ -326,7 +326,7 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 
 	}
 
-	varyings.nodeVarying3 = vec4<f32>( nodeVar36, ( ( ( ( ( 0.16 * smoothstep( nodeVar41, ( nodeVar41 + 0.02 ), object.nodeUniform15 ) ) * ( 1.0 - ( smoothstep( object.nodeUniform16, ( object.nodeUniform16 + 0.012 ), nodeVar19 ) * 0.88 ) ) ) * object.nodeUniform17 ) * nodeVar42 ) * nodeVar43 ) );
+	varyings.nodeVarying3 = vec4<f32>( nodeVar36, ( ( ( ( ( 0.045 * smoothstep( nodeVar41, ( nodeVar41 + 0.02 ), object.nodeUniform15 ) ) * ( 1.0 - ( smoothstep( object.nodeUniform16, ( object.nodeUniform16 + 0.012 ), nodeVar19 ) * 0.88 ) ) ) * object.nodeUniform17 ) * nodeVar42 ) * nodeVar43 ) );
 	modelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform21 );
 	v_positionView = ( modelViewMatrix * vec4<f32>( positionLocal, 1.0 ) ).xyz;
 	VERTEX_nodeVar45 = ( render.cameraProjectionMatrix * vec4<f32>( v_positionView, 1.0 ) );

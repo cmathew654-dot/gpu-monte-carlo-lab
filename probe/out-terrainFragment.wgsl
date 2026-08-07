@@ -443,7 +443,7 @@ fn main( @location( 0 ) v_positionWorld : vec3<f32>,
 	if ( ( DiffuseColor.w <= object.nodeUniform9 ) ) {
 
 		discard;
-
+		
 
 	}
 

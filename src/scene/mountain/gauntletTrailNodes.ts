@@ -24,12 +24,10 @@ import {
   vertexIndex,
 } from 'three/tsl';
 import { SNAP_MAX } from '../../sim/model/history';
-import { TRAIL_END_FAILED } from '../../sim/gauntlet/snapshots';
 import { GAUNTLET_RGB } from '../../sim/gauntlet/palette';
 import { uReveal } from '../playhead';
 import {
   gauntletEndSlot,
-  gauntletEndState,
   gauntletRouteIndex,
   gauntletWealth,
   medianLog,
@@ -37,17 +35,14 @@ import {
   routePos,
 } from './mountainBuffers';
 import { ROUTE_POINTS } from './routes';
-import {
-  OFFSET_HI,
-  OFFSET_K,
-  OFFSET_LO,
-  TRAIL_LIFT,
-} from './trailStyle';
+import { TRAIL_LIFT } from './trailStyle';
 
 const REVEAL_FEATHER = 0.025;
-const TRAIL_ALPHA = 0.82;
+const TRAIL_ALPHA = 0.1;
 const COHORT_LIFT = 0.13;
-const FAILURE_RED = /*#__PURE__*/ vec3(0.984, 0.173, 0.212);
+const GAUNTLET_OFFSET_K = 0.24;
+const GAUNTLET_OFFSET_HI = 0.3;
+const GAUNTLET_OFFSET_LO = -0.04;
 
 const COHORT_COLORS = GAUNTLET_RGB.map(
   (rgb) => /*#__PURE__*/ vec3(rgb[0], rgb[1], rgb[2]),
@@ -72,10 +67,6 @@ export function buildGauntletTrailNodes() {
     cohort.mul(uint(SNAP_MAX)).add(slot),
   );
   const median = medianLog.element(slot);
-  const endState = gauntletEndState.element(cohort);
-  const isFailureEnd = endState
-    .equal(uint(TRAIL_END_FAILED))
-    .and(slot.equal(endSlot));
 
   // FLOAT TWIN — progress math only (r185 ConditionalNode discipline).
   const slotF = select(
@@ -122,8 +113,8 @@ export function buildGauntletTrailNodes() {
   const logWealth = wealth.max(1.0).log().mul(0.43429448190325176);
   const offset = logWealth
     .sub(median)
-    .mul(OFFSET_K)
-    .clamp(OFFSET_LO, OFFSET_HI);
+    .mul(GAUNTLET_OFFSET_K)
+    .clamp(GAUNTLET_OFFSET_LO, GAUNTLET_OFFSET_HI);
   const worldPosition = base.add(
     normal.mul(float(TRAIL_LIFT + COHORT_LIFT).add(offset)),
   );
@@ -155,7 +146,7 @@ export function buildGauntletTrailNodes() {
       ),
     ),
   );
-  const rgb = select(isFailureEnd, FAILURE_RED, cohortRgb);
+  const rgb = cohortRgb;
 
   return {
     uniforms: { uSpritesPerCohort },
@@ -163,3 +154,6 @@ export function buildGauntletTrailNodes() {
     colorNode: varying(vec4(rgb, alpha)),
   };
 }
+
+
+
