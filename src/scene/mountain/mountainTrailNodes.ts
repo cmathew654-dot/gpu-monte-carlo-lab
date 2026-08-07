@@ -76,11 +76,29 @@ const REVEAL_FEATHER = 0.02;
  * OFFSET_K is 1.0). 0.1 ≈ 1.25× the median, 0.3 ≈ 2×. */
 const WINNER_LO = 0.1;
 const WINNER_HI = 0.3;
-/** Peak extra alpha a full winner gets on top of its base thread. */
-const WINNER_BOOST = 3.0;
-/** Slow breath: rad/s, and how deep the sine cuts into the boost. */
+/** v5.5: brightness across the WHOLE winner cohort just reads as ambient glow
+ * inside an additive blend ("less white strands"). So only a sparse, hashed
+ * ~1-in-50 slice of winners becomes a HIGHLIGHT thread — gold, loud, and
+ * countable — while the rest of the cohort stays quiet ambient support. */
+const HIGHLIGHT_FRAC = 0.03;
+/** Highlights ramp EARLIER than the ambient cohort so a gated thread reads
+ * gold along most of its climb, not just the last few segments. */
+const HIGHLIGHT_LO = 0.05;
+const HIGHLIGHT_HI = 0.18;
+/** Highlight is fully gold-tinted by this much highlight-ness. */
+const TINT_SATURATE = 0.4;
+/** Extra alpha for the sparse gold highlights (they carry the story). */
+const HIGHLIGHT_BOOST = 20.0;
+/** Extra normal lift so a highlight rides PROUD of the blue braid — contrast
+ * comes from sitting on black sky, not from more alpha (past ~20× the additive
+ * stack clips to white and the gold is lost). Kept below HERO_LIFT (0.15) so
+ * the hero still owns the top. Local to the highlight, not a shape constant. */
+const HIGHLIGHT_LIFT = 0.08;
+/** Extra alpha for un-highlighted winners — support, not signal. */
+const WINNER_AMBIENT = 0.5;
+/** Slow breath on the highlights: rad/s, and how deep the sine cuts. */
 const WINNER_PULSE_RATE = 1.5;
-const WINNER_PULSE_DEPTH = 0.3;
+const WINNER_PULSE_DEPTH = 0.4;
 /** v5.4: every route ENDS at the summit, so the last stretch of the climb is
  * where 100k threads pile onto one point. Fade over this much of the climb,
  * down to this floor — enough to kill the blowout, not the glow. */
@@ -94,6 +112,10 @@ const TRAIL_EMBER = /*#__PURE__*/ color(0xfb2c36).mul(0.6);
  * Authored as vec3 (0xffb547) so the hero/state select() sees ONE type —
  * color() would produce a color-typed node and break the overload. */
 const TRAIL_HERO = /*#__PURE__*/ vec3(1.0, 0.71, 0.28);
+/** v5.5: highlight threads use a DEEPER amber than the hero. At HIGHLIGHT_BOOST
+ * the green/blue channels clip first under additive stacking and a lighter gold
+ * lands on cream-white; starting low in G/B keeps the stack ON gold. */
+const TRAIL_WIN = /*#__PURE__*/ vec3(1.0, 0.52, 0.06);
 
 /**
  * The full vertex/node graph, exported as a pure function so the Tint
@@ -245,6 +267,19 @@ export function buildMountainTrailNodes() {
     .normalize();
   const latH = hash(seedBase.add(uint(888)));
   const latPhase = hash(seedBase.add(uint(999)));
+  // v5.5: winners are SPARSE + GOLD, not merely brighter — a bright cohort
+  // inside an additive blend just reads as ambient glow. A second per-path
+  // hash (latH is already spent on the pulse phase) gates ~HIGHLIGHT_FRAC of
+  // the winner cohort into highlight threads; the rest of the cohort gets a
+  // flat, unpulsed ambient lift. Declared here (not down with the alpha math)
+  // because `highlight` also drives the extra lift below.
+  // FLOAT-only select (r185 rule) — both branches are float.
+  const hiGate = select(
+    latH.mul(61.17).fract().greaterThan(1 - HIGHLIGHT_FRAC),
+    float(1.0),
+    float(0.0),
+  );
+  const highlight = smoothstep(HIGHLIGHT_LO, HIGHLIGHT_HI, raw).mul(hiGate);
   const latOffsetRaw = latH
     .sub(0.5)
     .mul(LAT_SPREAD)
@@ -262,6 +297,7 @@ export function buildMountainTrailNodes() {
   // tangles into the blue. FLOAT-only select.
   const lift = float(TRAIL_LIFT)
     .add(offset)
+    .add(highlight.mul(HIGHLIGHT_LIFT))
     .add(select(isHero, float(HERO_LIFT), float(0.0)));
   const worldPos = base.add(nrm.mul(lift)).add(lateral.mul(latOffset));
 
@@ -273,10 +309,9 @@ export function buildMountainTrailNodes() {
     .mul(1 - CURSOR_GHOST)
     .oneMinus();
 
-  // v5.4: winners (well above the median) glow ~2× and breathe. The pulse
-  // phase is per-path — reuse latH, the lateral-spread hash — so the fan
-  // shimmers instead of strobing in unison. `time` is three's render-group
-  // uniform, so nothing has to drive it from React.
+  // v5.5: winners are SPARSE + GOLD, not merely brighter. A second per-path
+  // `time` is three's render-group uniform — nothing drives it from React.
+  // `highlight`/`hiGate` are declared up with the lift math (they drive both).
   const winner = smoothstep(WINNER_LO, WINNER_HI, raw);
   const pulse = time
     .mul(WINNER_PULSE_RATE)
@@ -284,7 +319,9 @@ export function buildMountainTrailNodes() {
     .sin()
     .mul(WINNER_PULSE_DEPTH)
     .add(1 - WINNER_PULSE_DEPTH);
-  const winnerGain = float(1.0).add(winner.mul(WINNER_BOOST).mul(pulse));
+  const winnerGain = float(1.0)
+    .add(winner.mul(WINNER_AMBIENT))
+    .add(highlight.mul(HIGHLIGHT_BOOST).mul(pulse));
   // v5.4: routes all TERMINATE at the summit, so the top of the climb is one
   // point carrying every thread additively — it clipped to white. Fade the
   // last stretch down to a floor; the cairn still lights the peak. Same
@@ -299,10 +336,22 @@ export function buildMountainTrailNodes() {
     .mul(cursorDim)
     .mul(uAlphaScale)
     .mul(winnerGain)
-    .mul(summitFade)
+    // Highlights are EXEMPT from the summit fade: winners ride the highest
+    // offsets, so cresting above the ridgeline against black sky is exactly
+    // where they read — the round-3 fade was dimming them there to the floor.
+    // The bulk still fades (that's what kills the summit blowout).
+    .mul(mix(summitFade, float(1.0), highlight))
     .mul(select(notSingularity, float(1.0), float(0.0)))
     .mul(select(isHero, float(5.0), float(1.0)));
-  const rgbState = select(isDeathSlot, TRAIL_EMBER, TRAIL_BLUE);
+  // Highlight threads read as the gold hero's siblings — "these futures won".
+  // Tint saturates well before the alpha does — a half-lit highlight should
+  // already read GOLD, not a blue-amber wash.
+  const rgbWin = mix(
+    vec3(TRAIL_BLUE),
+    TRAIL_WIN,
+    smoothstep(0.0, TINT_SATURATE, highlight),
+  );
+  const rgbState = select(isDeathSlot, TRAIL_EMBER, rgbWin);
   const rgb = select(isHero.and(isDeathSlot.not()), TRAIL_HERO, rgbState);
 
   return {
