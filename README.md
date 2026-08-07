@@ -5,9 +5,9 @@
 [![React](https://img.shields.io/badge/React_19-TypeScript-2D3748?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6C757D?style=flat-square)](LICENSE)
 
-[![Walkthrough: scenario presets, spending and retire-year sliders, and the advisor view](docs/media/walkthrough.gif)](https://gpu-monte-carlo-lab.netlify.app)
+[![Walkthrough: scenario presets, spending and retire-year sliders, and the advisor view](docs/media/walkthrough.gif)](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/)
 
-*Captured in CPU mode — open the [live demo](https://gpu-monte-carlo-lab.netlify.app) in a WebGPU browser for the full 3D client view and 100× more scenarios.*
+*Captured in CPU mode — open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the full 3D client view and 100× more scenarios.*
 
 **A client-meeting tool for the hardest conversation in retirement planning.**
 
