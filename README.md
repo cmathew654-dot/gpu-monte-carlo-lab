@@ -1,5 +1,16 @@
 # GPU Monte Carlo Lab
 
+[![Live demo](https://img.shields.io/badge/live_demo-gpu--monte--carlo--lab.netlify.app-0B7285?style=flat-square)](https://gpu-monte-carlo-lab.netlify.app)
+[![WebGPU](https://img.shields.io/badge/WebGPU-three.js_TSL-1A5FB4?style=flat-square)](https://threejs.org/)
+[![React](https://img.shields.io/badge/React_19-TypeScript-2D3748?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-6C757D?style=flat-square)](LICENSE)
+
+[![GPU Monte Carlo Lab](docs/assets/concept-mountain.png)](https://gpu-monte-carlo-lab.netlify.app)
+
+*Concept illustration of the client view: each thread is one simulated future.*
+
+<!-- walkthrough-gif -->
+
 **A client-meeting tool for the hardest conversation in retirement planning.**
 
 GPU Monte Carlo Lab turns retirement math into a conversation an advisor can
@@ -8,7 +19,7 @@ sentence. The advisor can then interrogate the same plan across model
 assumptions, historical retirement dates, failure severity, and a tested
 spending frontier.
 
-> 🎥 **Live demo:** [gpu-monte-carlo-lab.netlify.app](https://gpu-monte-carlo-lab.netlify.app)
+**Live demo:** [gpu-monte-carlo-lab.netlify.app](https://gpu-monte-carlo-lab.netlify.app)
 
 ## The 60-second read
 
@@ -87,6 +98,20 @@ The primary simulation supports up to 1,000,000 paths on WebGPU. Non-WebGPU
 browsers use the 10,000-path CPU fallback. Frontier candidates run sequentially
 at 100,000 paths on GPU or 10,000 paths on CPU so results publish as one
 complete, internally consistent set.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Inputs["ControlPanel<br/>plan inputs, model, seed"] --> Store["src/store<br/>sim / gauntlet / frontier state"]
+  Store --> Sim["src/sim<br/>runSimulation"]
+  Sim --> GPU["three.js TSL compute<br/>up to 1M paths"]
+  Sim --> CPU["cpuSim worker<br/>10k-path fallback"]
+  GPU --> Stats["src/sim/stats<br/>success, percentiles, drawdown"]
+  CPU --> Stats
+  Stats --> Client["src/scene<br/>Mt. Rainier client view"]
+  Stats --> Advisor["src/ui<br/>advisor terminal, Gauntlet, Frontier"]
+```
 
 ## Models: three primary, one frontier-only
 
