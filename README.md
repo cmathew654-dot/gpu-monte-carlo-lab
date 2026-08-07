@@ -1,6 +1,6 @@
 # GPU Monte Carlo Lab
 
-[![Live demo](https://img.shields.io/badge/live_demo-gpu--monte--carlo--lab.netlify.app-0B7285?style=flat-square)](https://gpu-monte-carlo-lab.netlify.app)
+[![Live demo](https://img.shields.io/badge/live_demo-github_pages-0B7285?style=flat-square)](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/)
 [![WebGPU](https://img.shields.io/badge/WebGPU-three.js_TSL-1A5FB4?style=flat-square)](https://threejs.org/)
 [![React](https://img.shields.io/badge/React_19-TypeScript-2D3748?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6C757D?style=flat-square)](LICENSE)
