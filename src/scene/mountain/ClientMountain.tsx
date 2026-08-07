@@ -5,8 +5,6 @@
  *   TerrainMesh     shaded relief + snowline, lit by a low moon key light
  *   MountainTrails  blue ascent trails (wealth-mapped offset along terrain
  *                   normals; median path near-white 3×)
- *   MountainEmbers  failed futures ignite at their death snap and slide
- *                   downhill, ember red
  *   SummitMarker    glowing cairn at the summit
  *   MountainReveal  drives the shared uReveal sweep while the cone is
  *                   unmounted (4 s ease-out, restarts on each re-sim)
@@ -24,7 +22,6 @@ import { AxisScaffold } from '../AxisScaffold';
 import { ConeParticles } from '../ConeParticles';
 import { PercentileBands } from '../PercentileBands';
 import { TrajectoryLines } from '../TrajectoryLines';
-import { MountainEmbers } from './MountainEmbers';
 import { GauntletMountainTrails } from './GauntletMountainTrails';
 import { MountainTrails } from './MountainTrails';
 import { SummitMarker } from './SummitMarker';
@@ -99,7 +96,6 @@ export function ClientMountain() {
       <TerrainMesh data={data} />
       <MountainTrails data={data} />
       <GauntletMountainTrails data={data} />
-      <MountainEmbers data={data} />
       <SummitMarker data={data} />
       <MountainReveal />
     </>

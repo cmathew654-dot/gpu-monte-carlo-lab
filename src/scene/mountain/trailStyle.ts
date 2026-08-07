@@ -1,9 +1,7 @@
 /**
  * trailStyle.ts — the shared trail-shape constants for the viz5 mountain.
- * The TRAILS (mountainTrailNodes) and the EMBERS (mountainEmberNodes) must
- * agree on these numbers exactly: an ember ignites where its trail died, so
- * the position math on both sides consumes the same constants. Single
- * source of truth — never hardcode these values in the node graphs.
+ * Single source of truth for the trail shape — never hardcode these values
+ * in the node graphs.
  */
 
 /** Trail lift above the surface at zero offset (avoids z-fighting). */

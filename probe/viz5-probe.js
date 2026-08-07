@@ -13,8 +13,7 @@
  *         lit by a real DirectionalLight),
  *      b. the trail LineSegments (buildMountainTrailNodes: route storage
  *         reads + frozen sim buffer reads + uint/float select discipline),
- *      c. the ember Sprite pool (buildMountainEmberNodes),
- *      d. the summit cairn sprite (buildSummitNodes — the REAL production
+ *      c. the summit cairn sprite (buildSummitNodes — the REAL production
  *         graph from summitNodes.ts, no inline replica).
  *      Tint errors surface as uncapturederror / getShaderAsync rejections.
  *
@@ -42,7 +41,6 @@ import { buildTerrainData } from '/src/scene/mountain/terrain.ts';
 import { buildTerrainColorNode } from '/src/scene/mountain/terrainColor.ts';
 import { buildMountainTrailNodes } from '/src/scene/mountain/mountainTrailNodes.ts';
 import { buildGauntletTrailNodes } from '/src/scene/mountain/gauntletTrailNodes.ts';
-import { buildMountainEmberNodes } from '/src/scene/mountain/mountainEmberNodes.ts';
 import { buildSummitNodes } from '/src/scene/mountain/summitNodes.ts';
 import {
   gauntletEndSlot,
@@ -50,7 +48,6 @@ import {
   gauntletRouteIndex,
   gauntletWealth,
   medianLog,
-  routeDown,
   routeNrm,
   routePos,
   uRouteCount,
@@ -133,7 +130,6 @@ async function main() {
   };
   fill(routePos, data.routes.points);
   fill(routeNrm, data.routes.normals);
-  fill(routeDown, data.routes.downhill);
   uRouteCount.value = data.routes.count;
   {
     const a = getStorageAttribute(medianLog);
@@ -251,31 +247,7 @@ async function main() {
     out('getShaderAsync(gauntlet) THREW: ' + e.message);
   }
 
-  // --- 3d) ember material ---------------------------------------------------
-  try {
-    const nodes = buildMountainEmberNodes();
-    const mat = new SpriteNodeMaterial();
-    mat.transparent = true;
-    mat.depthWrite = false;
-    mat.blending = AdditiveBlending;
-    mat.positionNode = nodes.positionNode;
-    mat.scaleNode = nodes.scaleNode;
-    mat.colorNode = nodes.colorNode;
-    const sprite = new Sprite(mat);
-    sprite.count = 1024;
-    sprite.frustumCulled = false;
-    scene.add(sprite);
-    const shaders = await renderer.debug.getShaderAsync(scene, camera, sprite);
-    window.__probe.wgsl.emberVertex = shaders.vertexShader;
-    window.__probe.wgsl.emberFragment = shaders.fragmentShader;
-    out('ember WGSL OK (' + shaders.vertexShader.length + '/' + shaders.fragmentShader.length + ' chars)');
-    scene.remove(sprite);
-  } catch (e) {
-    window.__probe.errors.push('getShaderAsync(embers): ' + (e.stack || e.message));
-    out('getShaderAsync(embers) THREW: ' + e.message);
-  }
-
-  // --- 3e) summit cairn sprite (REAL production graph — summitNodes.ts) ---
+  // --- 3d) summit cairn sprite (REAL production graph — summitNodes.ts) ---
   try {
     const nodes = buildSummitNodes(data.summit);
     const mat = new SpriteNodeMaterial();

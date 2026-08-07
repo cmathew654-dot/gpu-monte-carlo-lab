@@ -2,7 +2,7 @@
  * summitNodes.ts — the summit cairn sprite's TSL graph (viz5). Steady
  * near-white glow, extracted from SummitMarker.tsx so probe/viz5-probe.js
  * compiles the REAL production graph instead of an inline replica — same
- * no-drift pattern as mountainTrailNodes/mountainEmberNodes.
+ * no-drift pattern as mountainTrailNodes.
  *
  */
 import { Fn, color, float, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
@@ -22,7 +22,7 @@ export function buildSummitNodes(summit: TerrainData['summit']) {
     positionNode: Fn(() => pos)(),
     scaleNode: Fn(() => vec2(scale))(),
     colorNode: Fn(() =>
-      vec4(CAIRN, float(0.85).mul(arrived.mul(0.6).add(0.4)).mul(radial)),
+      vec4(CAIRN, float(0.45).mul(arrived.mul(0.6).add(0.4)).mul(radial)),
     )(),
   };
 }

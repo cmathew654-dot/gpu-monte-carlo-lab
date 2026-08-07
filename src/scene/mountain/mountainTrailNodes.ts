@@ -23,8 +23,7 @@
  *
  * DEATH SEMANTICS (mirrors trajNodes): for a failed path, slots past the
  * death slot collapse onto it (zero-length segments → the trail STOPS at
- * its death snap); the death slot itself is ember-red. The ember slide
- * downhill is a separate sprite pool (mountainEmberNodes.ts).
+ * its death snap); the death slot itself is ember-red.
  *
  * three r185 ConditionalNode discipline (the v1 black screen): every
  * select() result is consumed in ONE type context — uint selects (slot,
@@ -39,6 +38,7 @@ import {
   mix,
   select,
   smoothstep,
+  time,
   uint,
   uniform,
   varying,
@@ -71,6 +71,21 @@ import {
 const TRAIL_ALPHA = 0.08;
 /** Reveal feather — same value as the cone/traj graphs. */
 const REVEAL_FEATHER = 0.02;
+
+/** v5.4: winner-ness ramp over `raw` (= log10 wealth vs the median, since
+ * OFFSET_K is 1.0). 0.1 ≈ 1.25× the median, 0.3 ≈ 2×. */
+const WINNER_LO = 0.1;
+const WINNER_HI = 0.3;
+/** Peak extra alpha a full winner gets on top of its base thread. */
+const WINNER_BOOST = 3.0;
+/** Slow breath: rad/s, and how deep the sine cuts into the boost. */
+const WINNER_PULSE_RATE = 1.5;
+const WINNER_PULSE_DEPTH = 0.3;
+/** v5.4: every route ENDS at the summit, so the last stretch of the climb is
+ * where 100k threads pile onto one point. Fade over this much of the climb,
+ * down to this floor — enough to kill the blowout, not the glow. */
+const SUMMIT_FADE_SPAN = 0.22;
+const SUMMIT_FADE_FLOOR = 0.15;
 
 const TRAIL_BLUE = /*#__PURE__*/ mix(color(0x3080ff), color(0x6fb2ff), 0.35);
 const TRAIL_EMBER = /*#__PURE__*/ color(0xfb2c36).mul(0.6);
@@ -258,11 +273,33 @@ export function buildMountainTrailNodes() {
     .mul(1 - CURSOR_GHOST)
     .oneMinus();
 
+  // v5.4: winners (well above the median) glow ~2× and breathe. The pulse
+  // phase is per-path — reuse latH, the lateral-spread hash — so the fan
+  // shimmers instead of strobing in unison. `time` is three's render-group
+  // uniform, so nothing has to drive it from React.
+  const winner = smoothstep(WINNER_LO, WINNER_HI, raw);
+  const pulse = time
+    .mul(WINNER_PULSE_RATE)
+    .add(latH.mul(Math.PI * 2))
+    .sin()
+    .mul(WINNER_PULSE_DEPTH)
+    .add(1 - WINNER_PULSE_DEPTH);
+  const winnerGain = float(1.0).add(winner.mul(WINNER_BOOST).mul(pulse));
+  // v5.4: routes all TERMINATE at the summit, so the top of the climb is one
+  // point carrying every thread additively — it clipped to white. Fade the
+  // last stretch down to a floor; the cairn still lights the peak. Same
+  // dim-to-a-floor idiom as cursorDim above.
+  const summitFade = smoothstep(1 - SUMMIT_FADE_SPAN, 1.0, t01)
+    .mul(1 - SUMMIT_FADE_FLOOR)
+    .oneMinus();
+
   const notSingularity = segSlot.greaterThan(uint(0));
   const alpha = float(TRAIL_ALPHA)
     .mul(vis)
     .mul(cursorDim)
     .mul(uAlphaScale)
+    .mul(winnerGain)
+    .mul(summitFade)
     .mul(select(notSingularity, float(1.0), float(0.0)))
     .mul(select(isHero, float(5.0), float(1.0)));
   const rgbState = select(isDeathSlot, TRAIL_EMBER, TRAIL_BLUE);

@@ -93,7 +93,7 @@ export function maxLineVerts(maxBufferSize?: number): number {
  * v5.3: the mountain client view renders a FRACTION of the budgeted
  * threads — "it doesn't need every single strand". One ascent per route
  * reads as a clean braid; the full 100k reads as noise. Applied ON TOP of
- * the budget stride by MountainTrails/MountainEmbers, and folded into the
+ * the budget stride by MountainTrails, and folded into the
  * hero-scan stride (heroPath.ts) so the highlighted thread always exists
  * in the rendered subset.
  */

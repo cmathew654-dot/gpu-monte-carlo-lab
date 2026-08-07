@@ -18,8 +18,8 @@
  *      merges onto ridges, spreads across the whole face.
  *   4. Resample each polyline to ROUTE_POINTS (32 = SNAP_MAX) by arc
  *      length, lift to world coordinates, and bake per-point terrain
- *      normals + steepest-descent ("downhill") unit vectors for the trail
- *      offset and ember-slide shaders.
+ *      normals for the trail
+ *      offset shader.
  */
 import { SNAP_MAX } from '../../sim/model/history';
 
@@ -43,7 +43,6 @@ export interface RouteData {
   /** count × ROUTE_POINTS × 3 world-space terrain normals (unit). */
   normals: Float32Array;
   /** count × ROUTE_POINTS × 3 world-space steepest-descent unit vectors. */
-  downhill: Float32Array;
 }
 
 /** Everything the route baker needs to know about the world transform. */
@@ -312,7 +311,6 @@ export function generateRoutes(
   const count = routesI.length;
   const points = new Float32Array(count * ROUTE_POINTS * 3);
   const normals = new Float32Array(count * ROUTE_POINTS * 3);
-  const downhill = new Float32Array(count * ROUTE_POINTS * 3);
   const pxWorld = frame.worldSize / (G - 1); // world units per full-res pixel
 
   const worldX = (i: number): number => (i / (G - 1) - 0.5) * frame.worldSize;
@@ -358,21 +356,8 @@ export function generateRoutes(
       normals[o] = -sX / nLen;
       normals[o + 1] = 1 / nLen;
       normals[o + 2] = -sZ / nLen;
-
-      // Steepest descent direction on the surface (unit).
-      const g2 = sX * sX + sZ * sZ;
-      const dLen = Math.hypot(sX, g2, sZ);
-      if (dLen < 1e-5) {
-        downhill[o] = 0;
-        downhill[o + 1] = -1;
-        downhill[o + 2] = 0;
-      } else {
-        downhill[o] = -sX / dLen;
-        downhill[o + 1] = -g2 / dLen;
-        downhill[o + 2] = -sZ / dLen;
-      }
     }
   }
 
-  return { count, points, normals, downhill };
+  return { count, points, normals };
 }
