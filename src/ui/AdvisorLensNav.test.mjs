@@ -8,7 +8,7 @@ import {
 } from './AdvisorLensNav.tsx';
 import { useFrontierStore } from '../store/frontierStore';
 
-const lenses = ['futures', 'frontier', 'gauntlet'];
+const lenses = ['futures', 'models', 'frontier', 'gauntlet'];
 
 function noop() {
   // Rendering semantics do not require event dispatch.
@@ -23,13 +23,14 @@ for (const lens of lenses) {
   );
 
   assert.match(markup, /aria-label="Advisor analysis lens"/);
-  assert.equal((markup.match(/role="tab"/g) ?? []).length, 3);
+  assert.equal((markup.match(/role="tab"/g) ?? []).length, 4);
   assert.match(markup, />Simulated futures</);
+  assert.match(markup, />Model math</);
   assert.match(markup, />Robustness frontier</);
   assert.match(markup, />Historical gauntlet</);
   assert.equal((markup.match(/aria-selected="true"/g) ?? []).length, 1);
   assert.equal((markup.match(/tabindex="0"/g) ?? []).length, 1);
-  assert.equal((markup.match(/tabindex="-1"/g) ?? []).length, 2);
+  assert.equal((markup.match(/tabindex="-1"/g) ?? []).length, 3);
 
   for (const id of lenses) {
     assert.match(markup, new RegExp('id="advisor-lens-' + id + '"'));
@@ -55,8 +56,10 @@ try {
   );
 
   assert.equal(lensForArrowKey('futures', 'ArrowLeft'), 'gauntlet');
-  assert.equal(lensForArrowKey('futures', 'ArrowRight'), 'frontier');
-  assert.equal(lensForArrowKey('frontier', 'ArrowLeft'), 'futures');
+  assert.equal(lensForArrowKey('futures', 'ArrowRight'), 'models');
+  assert.equal(lensForArrowKey('models', 'ArrowLeft'), 'futures');
+  assert.equal(lensForArrowKey('models', 'ArrowRight'), 'frontier');
+  assert.equal(lensForArrowKey('frontier', 'ArrowLeft'), 'models');
   assert.equal(lensForArrowKey('frontier', 'ArrowRight'), 'gauntlet');
   assert.equal(lensForArrowKey('gauntlet', 'ArrowLeft'), 'frontier');
   assert.equal(lensForArrowKey('gauntlet', 'ArrowRight'), 'futures');

@@ -3,12 +3,14 @@ import { type AdvisorLens, useFrontierStore } from '../store/frontierStore';
 
 const ADVISOR_LENSES: readonly AdvisorLens[] = [
   'futures',
+  'models',
   'frontier',
   'gauntlet',
 ];
 
 const LENS_LABELS: Record<AdvisorLens, string> = {
   futures: 'Simulated futures',
+  models: 'Model math',
   frontier: 'Robustness frontier',
   gauntlet: 'Historical gauntlet',
 };
@@ -48,6 +50,7 @@ export function AdvisorLensTabs({
 }: AdvisorLensTabsProps) {
   const tabRefs = React.useRef<Record<AdvisorLens, HTMLButtonElement | null>>({
     futures: null,
+    models: null,
     frontier: null,
     gauntlet: null,
   });

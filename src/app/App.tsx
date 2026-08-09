@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { CanvasRoot } from '../scene/CanvasRoot';
 import { playhead, uCursorX } from '../scene/playhead';
 import { AdvisorLensNav } from '../ui/AdvisorLensNav';
+import { AdvisorMathPanel } from '../ui/AdvisorMathPanel';
 import { CapabilityBadge } from '../ui/CapabilityBadge';
 import { ClientHud } from '../ui/ClientHud';
 import { ControlPanel } from '../ui/ControlPanel';
@@ -45,6 +46,7 @@ export default function App() {
   const toggleViewMode = useSimStore((s) => s.toggleViewMode);
   const advisorLens = useFrontierStore((s) => s.advisorLens);
   const showFutures = viewMode === 'advisor' && advisorLens === 'futures';
+  const showModels = viewMode === 'advisor' && advisorLens === 'models';
   const showFrontier = viewMode === 'advisor' && advisorLens === 'frontier';
   const showGauntlet = viewMode === 'advisor' && advisorLens === 'gauntlet';
   const showLegacyAdvisorData = showFutures || showGauntlet;
@@ -157,6 +159,15 @@ export default function App() {
                 <SwrButton />
               </>
             )}
+          </section>
+          <section
+            id="advisor-lens-panel-models"
+            role="tabpanel"
+            aria-labelledby="advisor-lens-models"
+            className="advisor-lens-panel"
+            hidden={advisorLens !== 'models'}
+          >
+            {showModels && <AdvisorMathPanel />}
           </section>
           <section
             id="advisor-lens-panel-frontier"

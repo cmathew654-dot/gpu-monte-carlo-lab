@@ -2,7 +2,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import type { FrontierModelKey, RobustnessFrontier } from '../sim/frontier/types';
 
-export type AdvisorLens = 'futures' | 'frontier' | 'gauntlet';
+export type AdvisorLens = 'futures' | 'models' | 'frontier' | 'gauntlet';
 export type FrontierStatus = 'idle' | 'running' | 'complete' | 'error';
 
 export interface FrontierState {

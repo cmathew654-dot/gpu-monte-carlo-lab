@@ -80,17 +80,18 @@ Six historical cohort chips make named retirements tangible.
 
 ### Advisor view
 
-The advisor moves through three named analytical lenses, each showing the
+The advisor moves through four named analytical lenses, each showing the
 same committed plan at a different decision scale:
 
 1. **Simulated futures** shows the outcome distribution, percentiles, safe
    withdrawal rate, worst-decile drawdown, and failure timing and magnitude.
-2. **Robustness frontier** compares tested real monthly spending across GBM,
+2. **Model math** explains the shared wealth update, replaceable return generators, and live primary quick-swap. Regime-t remains comparison-only.
+3. **Robustness frontier** compares tested real monthly spending across GBM,
    historical block bootstrap, Student-t(5), and frontier-only Regime-t. Its
    robust spend is the highest **tested** real monthly spending at which
    **every included model** reaches the 90-in-100 target; it is a comparison
    result, not advice or a guarantee.
-3. **Historical gauntlet** keeps six named retirement cohorts in view rather
+4. **Historical gauntlet** keeps six named retirement cohorts in view rather
    than blending adverse sequences into an anonymous distribution.
 
 No client and advisor number may disagree merely because it was computed in a

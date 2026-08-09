@@ -222,6 +222,14 @@ indicator and ordinary arrow-key semantics. Client/advisor mode remains a
 clearly labeled action, not an icon-only toggle. On narrow screens lenses
 scroll horizontally rather than collapsing into an undiscoverable menu.
 
+### Model math
+
+The advisor Model math lens treats the return generator as a replaceable instrument module beneath one shared wealth equation. Model-specific symbols and color tokens identify GBM (◯), historical bootstrap (□), Student-t(5) (△), and Regime-t (◇); text labels and execution status always duplicate the distinction.
+
+The live switch contains exactly three primary radios: Historical bootstrap, GBM, and Student-t(5). Regime-t is an inspection-only Frontier model. Its calibrated two-state return equation, transition rows, Cholesky factors, durations, and latest-filtered initialization are shown from the shipped calibration artifact; it never becomes a SimParams model or primary radio.
+
+The common equation, C(t+1) cashflow sign convention, absorbing failure boundary, and success share remain visible above the selected generator. Comparison tables show only complete three-model evidence, while Regime-t results are attributed only to a current complete four-model Frontier.
+
 ### Robustness Frontier
 
 The signature analytical surface combines an accessible model table with a
