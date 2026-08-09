@@ -4,6 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { StatCardsView } from './StatCards.tsx';
 import { ClientNarrative } from './ClientHud.tsx';
+import { AdvisorMathPanelView } from './AdvisorMathPanel.tsx';
 
 const committedParams = {
   model: 'gbm',
@@ -368,7 +369,7 @@ for (const selector of [
 }
 assert.match(
   visualCss,
-  /\.gauntlet-panel\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent/s,
+  /\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent/s,
 );
 assert.match(
   visualCss,
@@ -378,3 +379,47 @@ assert.match(
   visualCss,
   /\.app-shell:has\(\.client-hud\) \.fallback-container > \.fallback-dom\s*\{[^}]*display:\s*none/s,
 );
+
+const mathProps = {
+  params: committedParams,
+  committedParams,
+  stats,
+  magnitudeStats,
+  modelComparison: saturatedComparison,
+  frontierStatus: 'idle',
+  frontierProgress: { completed: 0, total: 0, model: null },
+  frontierResult: null,
+  frontierError: null,
+  mode: 'gpu',
+  onModelChange: () => {},
+  onOpenFrontier: () => {},
+  onSetAdvisorLens: () => {},
+};
+
+const clientSentences = {
+  gbm: /Each month is a fresh bell-curve surprise/i,
+  bootstrap: /It borrows an actual one-year market sequence/i,
+  fattail: /It keeps GBM.+unusually large monthly gains and losses more common/i,
+  regime: /Calm and stressful markets tend to arrive in runs/i,
+};
+
+for (const model of Object.keys(clientSentences)) {
+  const mathMarkup = renderToStaticMarkup(
+    React.createElement(AdvisorMathPanelView, {
+      ...mathProps,
+      selectedModel: model,
+      inspectRegime: model === 'regime',
+    }),
+  );
+  assert.match(mathMarkup, /W.*t\+1.*×.*g.*C/s);
+  assert.match(mathMarkup, clientSentences[model]);
+  assert.equal((mathMarkup.match(/role="radio"/g) ?? []).length, 3);
+  assert.match(mathMarkup, /Regime-t[^<]{0,80}Frontier only/i);
+}
+
+const advisorMathCss = readFileSync('src/ui/advisorMath.css', 'utf8');
+assert.match(advisorMathCss, /@media \(max-width: 720px\)/);
+assert.match(advisorMathCss, /@media \(max-width: 600px\)/);
+assert.match(advisorMathCss, /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)/);
+assert.match(advisorMathCss, /@media \(prefers-reduced-motion: reduce\)/);
+assert.doesNotMatch(advisorMathCss, /gradient|box-shadow|backdrop-filter/i);

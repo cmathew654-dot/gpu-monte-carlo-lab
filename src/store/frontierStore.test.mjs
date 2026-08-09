@@ -40,6 +40,8 @@ assert.equal(initial.advisorLens, 'futures');
 assert.equal(initial.status, 'idle');
 initial.setAdvisorLens('frontier');
 assert.equal(useFrontierStore.getState().status, 'idle');
+initial.setAdvisorLens('models');
+assert.equal(useFrontierStore.getState().advisorLens, 'models');
 
 useFrontierStore.getState().begin(54);
 assert.deepEqual(useFrontierStore.getState().progress, {
@@ -61,7 +63,7 @@ useFrontierStore.getState().fail('restore failed');
 assert.equal(useFrontierStore.getState().result, null);
 assert.equal(useFrontierStore.getState().error, 'restore failed');
 useFrontierStore.getState().clear();
-assert.equal(useFrontierStore.getState().advisorLens, 'frontier');
+assert.equal(useFrontierStore.getState().advisorLens, 'models');
 assert.equal(useFrontierStore.getState().status, 'idle');
 
 seedComplete();
