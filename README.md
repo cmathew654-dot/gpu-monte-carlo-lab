@@ -36,7 +36,7 @@ paths, and seed 42.
 | Regime-t, latest-filtered | 64.91% | $413,119.59 | $3,984.3750/mo |
 
 All four searches converged on evaluated curve points. Direct reruns reproduced
-the same success counts, and the measured curves had zero upward reversal. The
+the same success counts, and the measured curves had zero upward reversal.
 The current-plan success range is **51.49%–64.91%**. The historical bootstrap sets the robust spending floor at **$3,476.5625/month**.
 
 Regime-t produces the highest result in this fixture. Persistence tests a different assumption from stress.
