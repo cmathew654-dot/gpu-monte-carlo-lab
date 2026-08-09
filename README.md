@@ -7,40 +7,22 @@
 
 [![Walkthrough: scenario presets, spending and retire-year sliders, and the advisor view](docs/media/walkthrough.gif)](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/)
 
-*Captured in CPU mode — open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the full 3D client view and 100× more scenarios.*
+*The walkthrough was captured in CPU mode. Open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the 3D client view and 100× more scenarios.*
 
-**A client-meeting tool for the hardest conversation in retirement planning.**
-
-GPU Monte Carlo Lab turns retirement math into a conversation an advisor can
-hold in the room. The client sees a mountain of possible futures and one plain
-sentence. The advisor can then interrogate the same plan across model
-assumptions, historical retirement dates, failure severity, and a tested
-spending frontier.
-
-> 🎥 **Live demo:** [cmathew654-dot.github.io/gpu-monte-carlo-lab](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/)
+I built GPU Monte Carlo Lab to compare retirement plans across simulation assumptions. Clients get one plain-language result, while advisors can see how it changes across models and historical cohorts, including when a plan runs out of money and the size of the shortfall.
 
 ## The 60-second read
 
-- **Two views, one calculation.** A calm client view translates solvency into
-  natural frequency; the advisor view keeps the distributions, drawdowns,
-  failure timing, and model assumptions visible.
-- **Three primary models, not one house view.** GBM, historical bootstrap, and
-  Student-t are selectable live. Multi-stat triangulation puts their success
-  rate, P50 terminal wealth, and worst-decile drawdown side by side.
-- **A fourth lens answers a different question.** Regime-t appears only in the
-  Robustness Frontier. It tests persistent volatility regimes; it is not a
-  selectable primary model and not shorthand for “more stressful.”
-- **Decision output, not dashboard decoration.** The Frontier searches for each
-  model's highest actually tested monthly spend at roughly 90% success, then
-  reports the lowest result as the robust floor.
-- **History remains inspectable.** A six-cohort Historical Gauntlet replays
-  actual monthly returns from 1929, 1937, 1966, 1973, 2000, and 2008.
-- **Failure has a magnitude.** The tool reports when money runs out, the median
-  years left unfunded, and the corresponding real, undiscounted obligation.
+- **Client and advisor views.** Clients see a plain-language solvency result. Advisors can inspect distributions and drawdowns from the same calculation.
+- **Primary models.** Advisors can compare GBM, historical bootstrap, and Student-t with the same inputs and seed.
+- **Regime-t.** Advisors can use the Robustness Frontier to test persistent volatility as a separate assumption.
+- **Spending capacity.** The Frontier finds the highest tested monthly spend near 90% success for each model and reports the lowest result.
+- **Historical cohorts.** Advisors can replay six retirement dates from 1929 through 2008.
+- **Failure severity.** Advisors can see when money runs out and the real spending left unfunded.
 
 ### Fixed A6 validation fixture
 
-These are measured CPU results, not illustrative copy: $1,000,000 initial
+These measured CPU results use: $1,000,000 initial
 wealth, $5,000 monthly spending, 30 years, an 80%→60% equity glidepath, 10,000
 paths, and seed 42.
 
@@ -56,9 +38,7 @@ the same success counts, and the measured curves had zero upward reversal. The
 current-plan success range is **51.49%–64.91%**; the robust spending floor is
 **$3,476.5625/month**, set by the historical bootstrap.
 
-Regime-t is the most optimistic result in this fixture. That is useful evidence,
-not an anomaly to hide: persistence is an orthogonal assumption lens, not a
-synonym for stress.
+Regime-t produces the highest result in this fixture. Persistence tests a different assumption from stress.
 
 ## What the product lets an advisor ask
 
@@ -67,7 +47,6 @@ synonym for stress.
    statistics.
 2. **Does the answer survive different assumptions?** Triangulation runs all
    three primary models on identical financial inputs, seed, and path count.
-   “Where the models disagree, the assumptions live.”
 3. **How much spending survives every lens?** An explicit Frontier action
    evaluates GBM → bootstrap → Student-t → Regime-t. It shows each 90% capacity,
    the evaluated spending curve, and the minimum robust floor.
@@ -75,8 +54,7 @@ synonym for stress.
    retirement months against the exact observed equity and bond sequence,
    including ending wealth and the maximum supported withdrawal rate.
 5. **If it fails, how bad is it?** Median failure year is paired with median
-   shortfall years and median unfunded real withdrawals. Probability alone does
-   not get to tell the whole story.
+   shortfall years and median unfunded real withdrawals.
 
 ## What you're looking at
 
@@ -121,7 +99,7 @@ flowchart LR
 | Regime-t | No | No | Yes | What changes when joint volatility persists in latent regimes? |
 
 The first three remain the product's selectable return-model family. Regime-t
-is deliberately narrower: a two-state bivariate Student-t scale HMM calibrated
+has a narrower role: a two-state bivariate Student-t scale HMM calibrated
 offline to paired equity and bond returns. The states share a conditional mean
 and correlation structure; only covariance scale persists and switches.
 Regime-t therefore does **not** model changing stock–bond correlation,
@@ -151,7 +129,7 @@ criteria, and limitations.
 
 ## Validation
 
-The validation story is executable rather than adjectival:
+Run the validation commands:
 
 ```bash
 npm run test:sim
@@ -167,7 +145,7 @@ npm run test:compute-probe
 
 - Same seed and parameters produce byte-identical results; the 10,000-path run
   is an exact subset of the 100,000-path run.
-- `test:validate` currently passes its 56-check falsification matrix, including
+- `test:validate` passes its 56-check falsification matrix, including
   analytic GBM moments, path-count independence, bootstrap calibration,
   scenario presets, and 90% withdrawal searches.
 - `test:frontier-validate` runs the production four-model CPU frontier twice
@@ -201,8 +179,7 @@ cannot support an honest real-device performance claim.
 - **All dollars are real.** Failure means real purchasing power is exhausted,
   and the unfunded obligation is real and undiscounted. Translating that into a
   nominal client plan remains the advisor's job.
-- **Physical-GPU performance is open evidence.** Real-device timing and parity
-  protocols are defined, but no physical-GPU timing number is claimed here.
+- **Physical-GPU performance is unmeasured.** The repository defines real-device timing and parity protocols; it does not claim a physical-GPU timing result.
 
 ## Status and roadmap
 
@@ -211,20 +188,11 @@ multi-stat model triangulation, the six-cohort Historical Gauntlet,
 magnitude-of-failure presentation, the Robustness Frontier, and its
 frontier-only Regime-t lens.
 
-Remaining work is evidence and delivery, not another hidden analysis promise:
-publish the live demo/GIF, run the documented performance protocol on physical
-GPU hardware, and broaden the historical lens beyond US-only data before
-claiming geographic robustness.
+The remaining work is to publish the demo evidence and run the physical-GPU protocol. Geographic claims still require data beyond the United States.
 
-## A note on process
+## Development and verification
 
-This project was built through frozen interface contracts and independent
-verification gates. Specialist work on the simulation kernel, data pipeline,
-statistics, visualization, and UI converged through
-[docs/CONTRACTS.md](docs/CONTRACTS.md); the QA gate in
-[validation/REPORT.md](validation/REPORT.md) was allowed to block shipping.
-The standard is simple: a claim is either tied to a command that re-derives it,
-or it is labeled as unmeasured.
+I used [docs/CONTRACTS.md](docs/CONTRACTS.md) to keep the simulation, data pipeline, statistics, visualization, and UI work on shared interfaces, while [validation/REPORT.md](validation/REPORT.md) records the release checks and evidence gaps. Each quantitative claim in this README is backed by a reproducible command or marked unmeasured.
 
 ## Tech stack
 
@@ -239,28 +207,28 @@ npm run dev
 ```
 
 Open in a WebGPU-capable browser (Chrome/Edge or Safari 26+) for the full 3D
-view. Other browsers fall back to the CPU engine automatically. Use
+view. Other browsers use the CPU fallback engine. Use
 `npm run build` for a production bundle and the commands above for focused
 verification.
 
 ## Repo map
 
-- [DEMO.md](DEMO.md) — scripted client conversations backed by engine output.
-- [docs/calibration.md](docs/calibration.md) — source data, primary-model
+- [DEMO.md](DEMO.md): scripted client conversations backed by engine output.
+- [docs/calibration.md](docs/calibration.md): source data, primary-model
   assumptions, Regime-t calibration, and limitations.
-- [docs/AMENDMENT_A6.md](docs/AMENDMENT_A6.md) — the four-model Frontier and
+- [docs/AMENDMENT_A6.md](docs/AMENDMENT_A6.md): the four-model Frontier and
   Regime-t runtime/acceptance contract.
-- [validation/REPORT.md](validation/REPORT.md) — independent QA findings and
+- [validation/REPORT.md](validation/REPORT.md): independent QA findings and
   ship gate.
-- `src/sim/frontier/` — four-model capacity search and CPU/GPU adapters;
-  `src/sim/regime/` — calibration artifact, HMM, runtime, and acceptance gates;
-  `src/sim/gauntlet/` — deterministic historical-cohort replay.
-- `src/sim/` — primary GPU/CPU simulation and statistics; `src/data/` — Shiller
-  pipeline and scenario presets; `src/validation/` — fixed-fixture validators.
-- `src/scene/` — Mt. Rainier client visualization and GPU work coordination;
-  `src/ui/` — client/advisor surfaces; `src/store/` — simulation, gauntlet, and
+- `src/sim/frontier/`: four-model capacity search and CPU/GPU adapters;
+  `src/sim/regime/`: calibration artifact, HMM, runtime, and acceptance gates;
+  `src/sim/gauntlet/`: deterministic historical-cohort replay.
+- `src/sim/`: primary GPU/CPU simulation and statistics; `src/data/`: Shiller
+  pipeline and scenario presets; `src/validation/`: fixed-fixture validators.
+- `src/scene/`: Mt. Rainier client visualization and GPU work coordination;
+  `src/ui/`: client/advisor surfaces; `src/store/`: simulation, gauntlet, and
   frontier state.
-- `probe/` — headless-Chromium harness for production shader compilation and
+- `probe/`: headless-Chromium harness for production shader compilation and
   reviewable WGSL snapshots.
 
 ## License
