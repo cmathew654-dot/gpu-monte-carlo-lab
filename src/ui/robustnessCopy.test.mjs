@@ -285,6 +285,7 @@ const incompleteMarkup = clientMarkup({
 assert.doesNotMatch(incompleteMarkup, /Across all included models/);
 
 const visualCss = readFileSync('src/app/theme.css', 'utf8');
+const gauntletCss = readFileSync('src/ui/gauntlet.css', 'utf8');
 const visualHtml = readFileSync('index.html', 'utf8');
 const clientHudSource = readFileSync('src/ui/ClientHud.tsx', 'utf8');
 const appSource = readFileSync('src/app/App.tsx', 'utf8');
@@ -305,7 +306,15 @@ assert.doesNotMatch(visualCss, /backdrop-filter/);
 assert.match(visualCss, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(visualCss, /\.frontier-point-button:focus-visible/);
 assert.match(visualCss, /\.frontier-panel:has\(\.frontier-panel__idle\)/);
-assert.match(visualCss, /\.gauntlet-panel--advisor\s*\{\s*z-index:\s*7/);
+assert.doesNotMatch(visualCss, /\.gauntlet-panel/);
+assert.match(gauntletCss, /\.gauntlet-panel\s*\{[^}]*z-index:\s*7/s);
+assert.match(
+  gauntletCss,
+  /\.gauntlet-panel--client\s*\{[^}]*background:\s*var\(--gauntlet-overlay\)[^}]*border:\s*1px solid var\(--gauntlet-border\)/s,
+);
+assert.match(gauntletCss, /box-shadow:\s*none/);
+assert.doesNotMatch(gauntletCss.replace(/box-shadow\s*:\s*none/g, ''), /box-shadow/);
+assert.doesNotMatch(gauntletCss, /backdrop-filter/);
 assert.match(visualCss, /\.model-triangulation__row > :last-child/);
 assert.match(visualCss, /@media \(max-width: 720px\)/);
 assert.match(visualCss, /@media \(max-width: 600px\)/);
@@ -317,42 +326,46 @@ assert.match(clientHudSource, /className="client-hud__top"/);
 assert.match(clientHudSource, /<GauntletPanel \/>/);
 assert.doesNotMatch(appSource, /viewMode === 'client' && <GauntletPanel \/>/);
 assert.match(
-  visualCss,
+  gauntletCss,
   /\.gauntlet-panel--client\s*\{[^}]*position:\s*static/s,
 );
 assert.match(
-  visualCss,
+  gauntletCss,
   /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)/,
 );
 assert.doesNotMatch(visualCss, /@media \(max-height: 560px\)\s*\{/);
 assert.match(
-  visualCss,
-  /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)[\s\S]*\.gauntlet-chip__detail[\s\S]*display:\s*none/,
+  gauntletCss,
+  /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)[\s\S]*\.gauntlet-panel--client \.gauntlet-panel__narrative\s*\{[^}]*display:\s*none/s,
 );
+assert.doesNotMatch(
+  gauntletCss,
+  /\.gauntlet-panel__source(?:-date|-block)?[^}]*display:\s*none/,
+);
+assert.doesNotMatch(gauntletCss, /\.gauntlet-panel__note[^}]*display:\s*none/);
 assert.match(
-  baseClientCss,
-  /\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s,
+  gauntletCss,
+  /\.gauntlet-chip\s*\{[^}]*background:\s*var\(--raised-black\)[^}]*border:\s*1px solid var\(--gauntlet-border\)/s,
 );
-assert.match(
-  baseClientCss,
-  /\.gauntlet-panel--client \.gauntlet-chip__detail,[\s\S]{0,300}display:\s*none/,
-);
-assert.match(
-  baseClientCss,
-  /\.gauntlet-panel--client \.gauntlet-chip\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s,
-);
+for (const selector of ['identity', 'outcome', 'symbol']) {
+  assert.match(gauntletCss, new RegExp('\\.gauntlet-chip__' + selector + '\\b'));
+}
 assert.match(visualCss, /\.client-hud__method > summary:focus-visible/);
 assert.match(
   baseClientCss,
   /\.client-hud__method-state\s*\{[^}]*font-size:\s*10px/s,
 );
 assert.match(
-  visualCss,
-  /\.gauntlet-panel--client \.gauntlet-chip__year,[\s\S]{0,160}\.gauntlet-panel--client \.gauntlet-chip__symbol[\s\S]{0,180}text-shadow:/,
+  gauntletCss,
+  /\.gauntlet-chips\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)/s,
 );
 assert.match(
-  visualCss,
-  /@media \(max-width: 600px\) and \(max-aspect-ratio: 3\/4\)[\s\S]*\.gauntlet-panel--client \.gauntlet-chips\s*\{[^}]*flex-wrap:\s*wrap/s,
+  gauntletCss,
+  /@media \(min-width: 481px\) and \(max-width: 839px\)[\s\S]*\.gauntlet-chips\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)/s,
+);
+assert.match(
+  gauntletCss,
+  /@media \(max-width: 480px\)[\s\S]*\.gauntlet-chips\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)/s,
 );
 const compactClientCss = visualCss.slice(shortHeightRuleIndex);
 for (const selector of [
@@ -360,7 +373,6 @@ for (const selector of [
   'client-hud__plan-basis',
   'client-hud__method > summary',
   'client-hud__method-state',
-  'gauntlet-panel--client \.gauntlet-chip__year',
 ]) {
   assert.match(
     compactClientCss,
@@ -368,8 +380,8 @@ for (const selector of [
   );
 }
 assert.match(
-  visualCss,
-  /\.gauntlet-panel--client\s*\{[^}]*background:\s*transparent/s,
+  gauntletCss,
+  /@media \(max-height: 560px\) and \(min-aspect-ratio: 4\/3\)[\s\S]*\.gauntlet-panel--client \.gauntlet-chip\s*\{[^}]*min-height:\s*40px[^}]*padding:\s*6px 8px/s,
 );
 assert.match(
   visualCss,
