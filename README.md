@@ -37,8 +37,7 @@ paths, and seed 42.
 
 All four searches converged on evaluated curve points. Direct reruns reproduced
 the same success counts, and the measured curves had zero upward reversal. The
-current-plan success range is **51.49%–64.91%**; the robust spending floor is
-**$3,476.5625/month**, set by the historical bootstrap.
+The current-plan success range is **51.49%–64.91%**. The historical bootstrap sets the robust spending floor at **$3,476.5625/month**.
 
 Regime-t produces the highest result in this fixture. Persistence tests a different assumption from stress.
 
@@ -99,9 +98,8 @@ flowchart LR
 | Student-t(5) | Yes | Yes | Yes | What changes when extreme monthly returns are more common? |
 | Regime-t | No | No | Yes | What changes when joint volatility persists in latent regimes? |
 
-The first three remain the product's selectable return-model family. Regime-t
-has a narrower role: a two-state bivariate Student-t scale HMM calibrated
-offline to paired equity and bond returns. The states share a conditional mean
+
+The first three remain the product's selectable return-model family. I calibrated Regime-t offline as a two-state bivariate Student-t scale HMM using paired equity and bond returns. The states share a conditional mean
 and correlation structure; only covariance scale persists and switches.
 Regime-t therefore does **not** model changing stock–bond correlation,
 state-dependent expected returns, or named bull/bear regimes. Its
@@ -110,8 +108,8 @@ market call.
 
 ## Data and methodology
 
-The simulation draws every future from Robert Shiller's public *Irrational
-Exuberance* dataset or from a model calibrated against it. The shipped series contains **1,206
+
+I draw every simulated future from Robert Shiller's public *Irrational Exuberance* dataset or from a model I calibrated against it. The shipped series contains **1,206
 monthly real total returns from 1926-01 through 2026-06** for equities and
 10-year Treasuries. It spans the Depression, stagflation, the dot-com bust, and
 the Global Financial Crisis.
@@ -209,7 +207,7 @@ verification.
 
 ## Repo map
 
-- [DEMO.md](DEMO.md): scripted client conversations backed by engine output.
+- [DEMO.md](DEMO.md): I use engine output in scripted client conversations.
 - [docs/calibration.md](docs/calibration.md): source data, primary-model
   assumptions, Regime-t calibration, and limitations.
 - [docs/AMENDMENT_A6.md](docs/AMENDMENT_A6.md): the four-model Frontier and
