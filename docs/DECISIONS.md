@@ -1,7 +1,6 @@
 # Decision Log
 
-Short durable decisions live here. Execution status belongs in `MEMORY.md`;
-frozen interface details belong in the contract documents.
+Record durable decisions here and frozen interface details in the contract documents.
 
 ## D-001 — Pure statistics computation with explicit commit
 

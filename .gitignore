@@ -5,3 +5,13 @@ dist
 .env.*
 !.env.example
 .DS_Store
+.agents/
+.claude/
+.codex/
+.impeccable/
+.planning/
+AGENTS.md
+MEMORY.md
+docs/agent-ops/
+docs/exec-plans/
+docs/superpowers/

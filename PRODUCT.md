@@ -8,8 +8,7 @@ review_trigger: product-thesis, audience, methodology, or ship-bar change
 
 # GPU Monte Carlo Lab — Product Contract
 
-`PRODUCT.md` is this repository's local product contract. The filename has no
-special Codex behavior; `AGENTS.md` points to it deliberately.
+`PRODUCT.md` is this repository's local product contract.
 
 ## Register
 
@@ -174,10 +173,7 @@ number, delay core controls, or ignore reduced-motion preferences.
 
 ## Ship bar
 
-All commands in the root `AGENTS.md` pass. Any unavailable hardware validation
-is disclosed with a reproducible protocol. README and demo numbers come from
-current validation output, never memory or estimation. A static deployment,
-live URL, and visual artifact complete the portfolio handoff.
+Run the build and validation commands listed in `README.md` before release. Disclose unavailable hardware validation with a reproducible protocol. Use current validation output for README and demo numbers. Publish a static demo and visual artifact with the portfolio handoff.
 
 ## Open product questions
 
