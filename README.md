@@ -55,12 +55,11 @@ Regime-t produces the highest result in this fixture. Persistence tests a differ
 4. **What happened to real retirees?** The Historical Gauntlet replays six named
    retirement months against the exact observed equity and bond sequence,
    including ending wealth and the maximum supported withdrawal rate.
-5. **If it fails, how bad is it?** Median failure year is paired with median
-   shortfall years and median unfunded real withdrawals.
+5. **If it fails, how bad is it?** The advisor view shows the median failure year alongside shortfall severity, including the duration and value of unfunded withdrawals.
 
 ## What you're looking at
 
-**Client view.** Mt. Rainier is rendered from USGS elevation data (NED / SRTM
+**Client view.** The app renders Mt. Rainier from USGS elevation data (NED / SRTM
 via Mapzen Terrarium). Simulated futures climb the mountain as wealth paths.
 Futures that exhaust the portfolio ignite as embers and slide downhill; a gold
 thread marks the median outcome. The language stays client-readable:
@@ -117,7 +116,7 @@ monthly real total returns from 1926-01 through 2026-06** for equities and
 10-year Treasuries. It spans the Depression, stagflation, the dot-com bust, and
 the Global Financial Crisis.
 
-The data build is reproducible:
+Rebuild the data with:
 
 ```bash
 python3 src/data/build_historical.py
@@ -158,7 +157,7 @@ npm run test:compute-probe
   reviewable WGSL snapshots. A CPU reference engine provides an independent
   numerical path.
 
-Physical-GPU regime/frontier timing remains unmeasured. The software-rendered CI
+I have not measured Regime-t or Frontier timing on a physical GPU. The software-rendered CI
 environment can compile the production graphs and exercise CPU fallback, but it
 cannot support an honest real-device performance claim.
 
@@ -174,13 +173,9 @@ cannot support an honest real-device performance claim.
   force a multi-year Depression sequence. Regime-t adds persistent volatility
   scale, but not changing expected returns or stock–bond correlation.
 - **Latest-filtered can be optimistic.** In the fixed fixture Regime-t produced
-  the highest current success and capacity. Stationary initialization is kept
-  as a sensitivity check; the application publishes latest-filtered
-  results.
-- **Real-dollar reporting.** Failure means the portfolio exhausts its real purchasing
-- power. The tool reports the remaining obligation in real, undiscounted dollars.
-- Translating that into a nominal client plan remains the advisor's job.
-- **Physical-GPU performance is unmeasured.** The repository defines real-device timing and parity protocols and makes no physical-GPU timing claim.
+  the highest current success and capacity. Validation keeps stationary initialization only as a sensitivity check; the application publishes latest-filtered results.
+- **Real-dollar reporting.** Failure means the portfolio exhausts its real purchasing power. The tool reports the remaining obligation in real, undiscounted dollars. Translating that into a nominal client plan remains the advisor's job.
+- **Physical-GPU measurement.** The repository defines real-device timing and parity protocols and makes no physical-GPU timing claim.
 
 ## Status and roadmap
 
@@ -189,7 +184,7 @@ multi-stat model triangulation, the six-cohort Historical Gauntlet,
 magnitude-of-failure presentation, the Robustness Frontier, and its
 frontier-only Regime-t lens.
 
-The remaining work is to publish the demo evidence and run the physical-GPU protocol. Geographic claims still require data beyond the United States.
+I still need to publish the demo evidence and run the physical-GPU protocol. I need data beyond the United States before making geographic claims.
 
 ## Development and verification
 
