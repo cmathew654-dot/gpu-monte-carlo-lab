@@ -7,18 +7,20 @@
 
 [![Walkthrough: scenario presets, spending and retire-year sliders, and the advisor view](docs/media/walkthrough.gif)](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/)
 
-*The walkthrough was captured in CPU mode. Open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the 3D client view and 100× more scenarios.*
+*This walkthrough shows CPU mode. Open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the 3D client view and 100× more scenarios.*
 
 I built GPU Monte Carlo Lab to compare retirement plans across simulation assumptions. Clients get one plain-language result, while advisors can see how it changes across models and historical cohorts, including when a plan runs out of money and the size of the shortfall.
 
 ## The 60-second read
 
-- **Client and advisor views.** Clients see a plain-language solvency result. Advisors can inspect distributions and drawdowns from the same calculation.
-- **Primary models.** Advisors can compare GBM, historical bootstrap, and Student-t with the same inputs and seed.
-- **Regime-t.** Advisors can use the Robustness Frontier to test persistent volatility as a separate assumption.
-- **Spending capacity.** The Frontier finds the highest tested monthly spend near 90% success for each model and reports the lowest result.
-- **Historical cohorts.** Advisors can replay six retirement dates from 1929 through 2008.
-- **Failure severity.** Advisors can see when money runs out and the real spending left unfunded.
+| Area | Result |
+| --- | --- |
+| Client and advisor views | Clients get a plain-language solvency result. The advisor view keeps distributions and drawdowns from the same calculation. |
+| Primary models | Compare GBM, historical bootstrap, and Student-t with the same inputs and seed. |
+| Regime-t | The Robustness Frontier tests persistent volatility as a separate assumption. |
+| Spending capacity | The Frontier finds the highest tested monthly spend near 90% success for each model and reports the lowest result. |
+| Historical cohorts | Replay six retirement dates from 1929 through 2008. |
+| Failure severity | See when money runs out and how much real spending remains unfunded. |
 
 ### Fixed A6 validation fixture
 
@@ -109,8 +111,8 @@ market call.
 
 ## Data and methodology
 
-Every simulated future is drawn from, or calibrated against, Robert Shiller's
-public *Irrational Exuberance* dataset. The shipped series contains **1,206
+The simulation draws every future from Robert Shiller's public *Irrational
+Exuberance* dataset or from a model calibrated against it. The shipped series contains **1,206
 monthly real total returns from 1926-01 through 2026-06** for equities and
 10-year Treasuries. It spans the Depression, stagflation, the dot-com bust, and
 the Global Financial Crisis.
@@ -151,9 +153,8 @@ npm run test:compute-probe
 - `test:frontier-validate` runs the production four-model CPU frontier twice
   from fresh copied buffers, requires exact deterministic equality, reruns each
   converged capacity directly, and then executes Regime-t calibration and
-  initialization-sensitivity acceptance. Elapsed time is reported separately
-  from deterministic evidence and is not treated as a product-performance claim.
-- The production WebGPU shader graphs are compiled through Tint and retained as
+  initialization-sensitivity acceptance. The test reports elapsed time separately from deterministic evidence and does not present it as a product-performance claim.
+- Tint compiles the production WebGPU shader graphs, and the repository keeps
   reviewable WGSL snapshots. A CPU reference engine provides an independent
   numerical path.
 
@@ -169,17 +170,17 @@ cannot support an honest real-device performance claim.
 - **Model range is not a confidence interval.** The four lenses carry no model
   weights or probabilities. The robust floor is a tested simulation threshold,
   not individualized advice or a guarantee.
-- **Persistence is modeled narrowly.** Twelve-month bootstrap blocks cannot
+- **Persistence scope.** Twelve-month bootstrap blocks cannot
   force a multi-year Depression sequence. Regime-t adds persistent volatility
   scale, but not changing expected returns or stock–bond correlation.
 - **Latest-filtered can be optimistic.** In the fixed fixture Regime-t produced
   the highest current success and capacity. Stationary initialization is kept
-  as validation-only sensitivity; the application publishes latest-filtered
+  as a sensitivity check; the application publishes latest-filtered
   results.
-- **All dollars are real.** Failure means real purchasing power is exhausted,
-  and the unfunded obligation is real and undiscounted. Translating that into a
-  nominal client plan remains the advisor's job.
-- **Physical-GPU performance is unmeasured.** The repository defines real-device timing and parity protocols; it does not claim a physical-GPU timing result.
+- **Real-dollar reporting.** Failure means the portfolio exhausts its real purchasing
+- power. The tool reports the remaining obligation in real, undiscounted dollars.
+- Translating that into a nominal client plan remains the advisor's job.
+- **Physical-GPU performance is unmeasured.** The repository defines real-device timing and parity protocols and makes no physical-GPU timing claim.
 
 ## Status and roadmap
 
@@ -192,7 +193,7 @@ The remaining work is to publish the demo evidence and run the physical-GPU prot
 
 ## Development and verification
 
-I used [docs/CONTRACTS.md](docs/CONTRACTS.md) to keep the simulation, data pipeline, statistics, visualization, and UI work on shared interfaces, while [validation/REPORT.md](validation/REPORT.md) records the release checks and evidence gaps. Each quantitative claim in this README is backed by a reproducible command or marked unmeasured.
+I used [docs/CONTRACTS.md](docs/CONTRACTS.md) to keep the simulation, data pipeline, statistics, visualization, and UI work on shared interfaces, while [validation/REPORT.md](validation/REPORT.md) records the release checks and evidence gaps. A reproducible command supports each quantitative claim in this README; the README labels anything else unmeasured.
 
 ## Tech stack
 
