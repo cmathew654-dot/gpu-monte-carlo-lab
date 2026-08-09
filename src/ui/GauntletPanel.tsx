@@ -2,6 +2,7 @@
  * W2-B historical gauntlet HUD. One deterministic store snapshot feeds both
  * altitudes: calm client chips and the advisor's full cohort table.
  */
+import './gauntlet.css';
 import { useEffect, type CSSProperties } from 'react';
 import { GAUNTLET_CSS_COLORS } from '../sim/gauntlet/palette';
 import {
@@ -36,12 +37,14 @@ function ClientGauntlet() {
     return (
       <section
         className="gauntlet-panel gauntlet-panel--client"
-        aria-label="Historical retirement cohorts"
+        aria-labelledby="gauntlet-client-title"
         aria-busy="true"
       >
-        <p className="gauntlet-panel__loading data-label">
-          REPLAYING SIX HISTORICAL STARTS…
-        </p>
+        <div className="gauntlet-panel__heading">
+          <h2 id="gauntlet-client-title">Your plan vs. six hard retirements</h2>
+          <span className="gauntlet-panel__source">ACTUAL MONTHLY RETURNS</span>
+        </div>
+        <p className="gauntlet-panel__loading">REPLAYING SIX HISTORICAL STARTS…</p>
       </section>
     );
   }
@@ -54,11 +57,20 @@ function ClientGauntlet() {
     >
       <div className="gauntlet-panel__heading">
         <h2 id="gauntlet-client-title">Your plan vs. six hard retirements</h2>
-        <span className="data-label">ACTUAL MONTHLY RETURNS</span>
+        <span className="gauntlet-panel__source">ACTUAL MONTHLY RETURNS</span>
       </div>
-      <ul className="gauntlet-chips">
+      <ul className="gauntlet-chips" aria-label="Historical cohort outcomes">
         {cohorts.map((cohort, index) => {
           const status = cohortPresentation(cohort);
+          const clientDetail =
+            status.tone === 'failed'
+              ? 'Ran out' +
+                (cohort.failureYear === null
+                  ? ''
+                  : ' · yr ' + cohort.failureYear.toFixed(1))
+              : status.tone === 'survived'
+                ? 'Full plan'
+                : 'Still going';
           const style = {
             '--cohort-color': GAUNTLET_CSS_COLORS[index],
           } as CohortStyle;
@@ -67,20 +79,19 @@ function ClientGauntlet() {
               key={cohort.cohortId}
               className={'gauntlet-chip gauntlet-chip--' + status.tone}
               style={style}
-              title={cohort.cohort.oneLine}
+              aria-label={
+                cohort.cohort.oneLine + '. ' + status.symbol + ' ' + clientDetail
+              }
             >
-              <span className="gauntlet-chip__year data-label">
-                {status.year}
+              <span className="gauntlet-chip__identity">
+                <span className="gauntlet-chip__dot" aria-hidden="true" />
+                <span className="gauntlet-chip__year">{status.year}</span>
               </span>
-              <span className="gauntlet-chip__detail">
-                {status.tone === 'failed'
-                  ? status.detail.replace('failed year', 'failed yr')
-                  : status.tone === 'survived'
-                    ? 'passed'
-                    : 'still going *'}
-              </span>
-              <span className="sr-only">
-                {status.year + ': ' + status.detail}
+              <span className="gauntlet-chip__outcome">
+                <span className="gauntlet-chip__symbol" aria-hidden="true">
+                  {status.symbol}
+                </span>
+                <span>{clientDetail}</span>
               </span>
             </li>
           );
@@ -91,8 +102,11 @@ function ClientGauntlet() {
       </p>
       {cohorts.some((cohort) => cohort.exhaustedData) && (
         <p className="gauntlet-panel__note">
-          * Still solvent when the historical record ends; not a full-horizon
-          pass.
+          <span className="gauntlet-panel__note-marker" aria-hidden="true">
+            *
+          </span>{' '}
+          'Still going' means the portfolio was solvent when the available return
+          history ended; it is not a full-plan result.
         </p>
       )}
     </section>
@@ -113,19 +127,33 @@ function AdvisorGauntlet() {
           <h2 id="gauntlet-advisor-title">Historical gauntlet</h2>
           <p>Current plan replayed from six named retirement months.</p>
         </div>
-        <span className="data-label">
-          {snapshot.result.seriesStartDate} → {snapshot.result.seriesEndDate}
-        </span>
+        <div className="gauntlet-panel__source-block">
+          <span className="gauntlet-panel__source">ACTUAL MONTHLY RETURNS</span>
+          <span className="gauntlet-panel__source-date">
+            {snapshot.result.seriesStartDate} → {snapshot.result.seriesEndDate}
+          </span>
+        </div>
       </div>
-      <div className="gauntlet-table-wrap">
+      <div
+        className="gauntlet-table-wrap"
+        role="region"
+        tabIndex={0}
+        aria-label="Scrollable historical gauntlet table"
+      >
         <table className="gauntlet-table">
           <thead>
             <tr>
               <th scope="col">Cohort</th>
               <th scope="col">Plan result</th>
-              <th scope="col">Ending wealth</th>
-              <th scope="col">Max SWR</th>
-              <th scope="col">Observed</th>
+              <th scope="col" className="gauntlet-table__numeric">
+                Ending wealth
+              </th>
+              <th scope="col" className="gauntlet-table__numeric">
+                Max SWR
+              </th>
+              <th scope="col" className="gauntlet-table__numeric">
+                Observed
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -137,21 +165,28 @@ function AdvisorGauntlet() {
               return (
                 <tr key={cohort.cohortId} style={style}>
                   <th scope="row">
-                    <span className="gauntlet-table__swatch" aria-hidden="true" />
-                    {cohort.cohort.label}
+                    <span className="gauntlet-table__cohort">
+                      <span className="gauntlet-table__swatch" aria-hidden="true" />
+                      {cohort.cohort.label}
+                    </span>
                   </th>
-                  <td className={'gauntlet-table__status gauntlet-table__status--' + status.tone}>
-                    <span aria-hidden="true">{status.symbol}</span>{' '}
+                  <td className="gauntlet-table__status">
+                    <span
+                      className={'gauntlet-table__symbol gauntlet-table__symbol--' + status.tone}
+                      aria-hidden="true"
+                    >
+                      {status.symbol}
+                    </span>{' '}
                     {status.detail}
                   </td>
-                  <td className="data-label">
+                  <td className="gauntlet-table__numeric data-label">
                     {fmtUSDCompact(cohort.endingWealth)}
                   </td>
-                  <td className="data-label">
+                  <td className="gauntlet-table__numeric data-label">
                     {fmtPct(cohort.maxSWR.annualRate, 2)}
                     {cohort.maxSWR.dataLimited ? '*' : ''}
                   </td>
-                  <td className="data-label">
+                  <td className="gauntlet-table__numeric data-label">
                     {(cohort.monthsSimulated / 12).toFixed(1)} yr
                     {cohort.exhaustedData ? '*' : ''}
                   </td>
@@ -162,8 +197,11 @@ function AdvisorGauntlet() {
         </table>
       </div>
       <p className="gauntlet-panel__note">
-        Max SWR uses level real monthly spending; * indicates a data-limited
-        cohort, not a full-horizon result.
+        Max SWR uses level real monthly spending.{' '}
+        <span className="gauntlet-panel__note-marker" aria-hidden="true">
+          *
+        </span>{' '}
+        marks a data-limited cohort; it is not a full-horizon result.
       </p>
     </section>
   );
@@ -173,5 +211,3 @@ export function GauntletPanel() {
   const viewMode = useSimStore((state) => state.viewMode);
   return viewMode === 'client' ? <ClientGauntlet /> : <AdvisorGauntlet />;
 }
-
-

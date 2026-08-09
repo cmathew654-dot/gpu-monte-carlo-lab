@@ -251,7 +251,7 @@ console.log('\n[gauntlet-viz e] client/advisor presentation truth');
     cohortPresentation(exhausted).detail.toLowerCase().includes('history'),
   );
   const narrative = gauntletNarrative([survived, failed1966]);
-  check('narrative contrasts crash and grind', /crash.*grind/i.test(narrative));
+  check('narrative contrasts crash and inflationary period', /crash.*inflationary period/i.test(narrative));
   check('narrative is evidence-grounded in named years', /1929/.test(narrative) && /1966/.test(narrative));
 }
 
