@@ -14,7 +14,7 @@ export type CohortTone = 'survived' | 'failed' | 'exhausted';
 
 export interface CohortPresentation {
   year: string;
-  symbol: '✓' | '✗' | '*';
+  symbol: '✓' | '×' | '*';
   detail: string;
   tone: CohortTone;
 }
@@ -26,7 +26,7 @@ export function cohortPresentation(
   if (cohort.failed) {
     return {
       year,
-      symbol: '✗',
+      symbol: '×',
       detail:
         cohort.failureYear === null
           ? 'plan failed'
@@ -63,23 +63,22 @@ export function gauntletNarrative(
           ? ''
           : ' around year ' + Math.round(stagflation.failureYear);
       return (
-        "The crash you survive vs. the grind you don't: " +
-        '1929 lasts; 1966 runs out' +
+        'This plan lasts through the 1929 crash, but runs out during the long 1966 inflationary period' +
         year +
         '.'
       );
     }
     if (!depression.failed && !stagflation.failed) {
-      return 'This plan lasts through both the 1929 crash and the long 1966 inflationary grind.';
+      return 'This plan lasts through both the 1929 crash and the long 1966 inflationary period.';
     }
     if (depression.failed && stagflation.failed) {
-      return 'Both 1929 and 1966 break this plan: the opening crash and the long inflationary grind.';
+      return 'This plan runs out in both the 1929 crash cohort and the long 1966 inflationary period.';
     }
-    return 'The 1966 inflationary grind lasts; the opening 1929 crash is the harder test for this plan.';
+    return 'This plan lasts through the 1966 inflationary period, but runs out in the 1929 crash cohort.';
   }
 
   const failedCount = cohorts.filter((cohort) => cohort.failed).length;
   return failedCount === 0
-    ? 'The plan lasts through every fully observed historical cohort.'
-    : failedCount + ' of the six historical cohorts run out of money.';
+    ? 'This plan lasts through every fully observed historical cohort.'
+    : failedCount + ' of six historical cohorts run out of money.';
 }

@@ -1272,10 +1272,6 @@ body,
   margin: 10px 0 0;
 }
 
-/* --- W2-B: named historical cohort HUD ----------------------------------
- * A single flat field-instrument surface, not another KPI-card grid. Cohort
- * hue links the DOM legend to its Rainier trail; symbols/text preserve the
- * result without color. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1287,291 +1283,6 @@ body,
   white-space: nowrap;
   border: 0;
 }
-
-.gauntlet-panel {
-  position: absolute;
-  z-index: 7;
-  pointer-events: auto;
-  color: var(--fg);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-panel);
-}
-
-.gauntlet-panel--client {
-  position: static;
-  width: min(680px, calc(100vw - 48px));
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-}
-
-.gauntlet-panel__heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.gauntlet-panel__heading h2 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-wrap: balance;
-}
-
-.gauntlet-panel__heading p {
-  margin: 3px 0 0;
-  color: #b5bbc5;
-  font-size: 11px;
-}
-
-.gauntlet-panel__heading > .data-label {
-  color: #aeb5c0;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
-}
-
-.gauntlet-chips {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(108px, 1fr));
-  gap: 6px;
-  padding: 0 0 3px;
-  margin: 9px 0 0;
-  overflow-x: auto;
-  list-style: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.gauntlet-chip {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 6px;
-  min-height: 43px;
-  padding: 7px 8px 6px;
-  background: #0b1018;
-  border: 1px solid #27303d;
-  border-radius: 4px;
-}
-
-.gauntlet-chip::before {
-  content: '';
-  position: absolute;
-  top: 7px;
-  left: 7px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--cohort-color);
-}
-
-.gauntlet-chip__year {
-  padding-left: 8px;
-  color: #f3f6fa;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.gauntlet-chip__symbol {
-  color: var(--cohort-color);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.gauntlet-chip--failed .gauntlet-chip__symbol {
-  color: var(--danger);
-}
-
-.gauntlet-chip__detail {
-  grid-column: 1 / -1;
-  color: #aeb5c0;
-  font-size: 9px;
-  white-space: nowrap;
-}
-
-.gauntlet-panel__narrative {
-  margin: 8px 0 0;
-  color: #d6dbe3;
-  font-size: 12px;
-  line-height: 1.35;
-  text-align: center;
-  text-wrap: pretty;
-}
-
-.gauntlet-panel__note,
-.gauntlet-panel__loading {
-  margin: 6px 0 0;
-  color: #aeb5c0;
-  font-family: var(--font-data);
-  font-size: 9px;
-  line-height: 1.4;
-  letter-spacing: 0.04em;
-}
-
-.gauntlet-panel--client .gauntlet-panel__note,
-.gauntlet-panel--client .gauntlet-panel__loading {
-  text-align: left;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading {
-  justify-content: flex-start;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading h2 {
-  color: #d9dfe8;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading > .data-label {
-  display: none;
-}
-
-.gauntlet-panel--client .gauntlet-chips {
-  display: flex;
-  justify-content: center;
-  gap: 0;
-  margin: 5px 0 0;
-  padding: 0;
-  overflow: visible;
-}
-
-.gauntlet-panel--client .gauntlet-chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: auto;
-  padding: 0 9px;
-  background: transparent;
-  border: 0;
-  border-inline-end: 1px solid #343c48;
-  border-radius: 0;
-}
-
-.gauntlet-panel--client .gauntlet-chip::before {
-  position: static;
-  flex: 0 0 auto;
-  width: 3px;
-  height: 3px;
-  margin-right: 1px;
-}
-
-.gauntlet-panel--client .gauntlet-chip__year {
-  padding-left: 0;
-  font-size: 10px;
-}
-
-.gauntlet-panel--client .gauntlet-chip__symbol {
-  font-size: 10px;
-}
-
-.gauntlet-panel--client .gauntlet-chip__year,
-.gauntlet-panel--client .gauntlet-chip__symbol {
-  text-shadow: 0 1px 1px #000000, 0 0 2px #000000;
-}
-
-.gauntlet-panel--client .gauntlet-chip__detail,
-.gauntlet-panel--client .gauntlet-panel__note {
-  display: none;
-}
-
-.gauntlet-panel--client .gauntlet-panel__narrative {
-  margin-top: 5px;
-  color: #b9c1cc;
-  font-size: 10px;
-  line-height: 1.3;
-}
-
-.gauntlet-panel--advisor {
-  top: 64px;
-  left: 332px;
-  right: 312px;
-  max-height: 312px;
-  padding: 13px 14px 10px;
-  overflow: hidden;
-  background: var(--panel);
-}
-
-.gauntlet-table-wrap {
-  margin-top: 9px;
-  overflow: auto;
-}
-
-.gauntlet-table {
-  width: 100%;
-  min-width: 650px;
-  border-collapse: collapse;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
-
-.gauntlet-table th,
-.gauntlet-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #202733;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.gauntlet-table thead th {
-  color: #aeb5c0;
-  font-family: var(--font-data);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.gauntlet-table tbody th {
-  color: #e9edf3;
-  font-weight: 500;
-}
-
-.gauntlet-table__swatch {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: var(--cohort-color);
-}
-
-.gauntlet-table__status--survived {
-  color: #72d6ad;
-}
-
-.gauntlet-table__status--failed {
-  color: #ff7168;
-}
-
-.gauntlet-table__status--exhausted {
-  color: #e1c26e;
-}
-
-@media (max-width: 1180px) {
-  .gauntlet-panel--advisor {
-    left: 316px;
-    right: 296px;
-  }
-}
-
-@media (max-width: 720px) {
-  .gauntlet-panel--client {
-    width: calc(100vw - 24px);
-  }
-
-  .gauntlet-panel__heading > .data-label {
-    display: none;
-  }
- }
-
 /* ==========================================================================
  * Amendment A5 — the advisor's alpine field instrument.
  *
@@ -1638,7 +1349,6 @@ select {
 .app-rail,
 .presentation,
 .client-hud,
-.gauntlet-panel,
 .playhead-hud,
 .read-caption,
 .frontier-panel {
@@ -1770,7 +1480,6 @@ select {
 }
 
 .panel,
-.gauntlet-panel,
 .playhead-hud,
 .read-caption,
 .client-hud__sliders,
@@ -2276,9 +1985,6 @@ select {
   content: '◇';
 }
 
-.gauntlet-panel--advisor {
-  z-index: 7;
-}
 
 @keyframes frontier-settle {
   from {
@@ -2389,11 +2095,6 @@ select {
     bottom: 12px;
   }
 
-  .gauntlet-panel--advisor {
-    inset: 108px 12px 12px;
-    max-height: none;
-    padding: 13px 12px 10px;
-  }
 }
 
 @media (min-width: 601px) and (max-width: 720px) {
@@ -2403,10 +2104,6 @@ select {
 
 }
 
-/* Short landscape windows need information hierarchy, not another guessed
- * absolute offset. The headline and gauntlet stay in document flow; secondary
- * audit copy collapses while the plan result, model count, cohort outcomes,
- * and two core controls remain visible. */
 @media (max-height: 560px) and (min-aspect-ratio: 4/3) {
   .client-hud {
     justify-content: space-between;
@@ -2457,42 +2154,6 @@ select {
     display: none;
   }
 
-  .gauntlet-panel--client {
-    width: min(680px, calc(100vw - 36px));
-    padding: 0;
-  }
-
-  .gauntlet-panel--client .gauntlet-panel__heading h2 {
-    font-size: 11px;
-  }
-
-  .gauntlet-panel--client .gauntlet-panel__heading > .data-label,
-  .gauntlet-panel--client .gauntlet-chip__detail,
-  .gauntlet-panel--client .gauntlet-panel__narrative,
-  .gauntlet-panel--client .gauntlet-panel__note {
-    display: none;
-  }
-
-  .gauntlet-panel--client .gauntlet-chips {
-    gap: 0;
-    margin-top: 5px;
-    padding-bottom: 0;
-  }
-
-  .gauntlet-panel--client .gauntlet-chip {
-    min-height: 24px;
-    padding: 0 7px;
-  }
-
-  .gauntlet-panel--client .gauntlet-chip::before {
-    width: 3px;
-    height: 3px;
-  }
-
-  .gauntlet-panel--client .gauntlet-chip__year {
-    padding-left: 0;
-    font-size: 10px;
-  }
 
   .client-hud__bottom {
     gap: 6px;
@@ -2528,8 +2189,7 @@ select {
     gap: 14px;
   }
 
-  .client-hud__narrative,
-  .gauntlet-panel--client {
+  .client-hud__narrative {
     width: 100%;
   }
 
@@ -2538,20 +2198,6 @@ select {
     overflow-wrap: anywhere;
   }
 
-  .gauntlet-panel--client .gauntlet-chips {
-    flex-wrap: wrap;
-    row-gap: 6px;
-  }
-
-  .gauntlet-panel--client .gauntlet-chip {
-    box-sizing: border-box;
-    flex: 0 0 33.333%;
-    padding-inline: 4px;
-  }
-
-  .gauntlet-panel--client .gauntlet-chip:nth-child(3n) {
-    border-inline-end: 0;
-  }
 }
 
 @media (max-width: 600px) {
@@ -2584,125 +2230,6 @@ select {
   }
 }
 
-.gauntlet-panel--client {
-  position: static;
-  box-sizing: border-box;
-  width: fit-content;
-  max-width: min(92vw, 1040px);
-  padding: 14px 18px 12px;
-  background: rgba(10, 10, 10, 0.9);
-  border: 1px solid #2e2e2e;
-  border-radius: 6px;
-  pointer-events: auto;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading {
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading h2 {
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.3;
-}
-
-.gauntlet-panel--client .gauntlet-panel__heading > .data-label {
-  display: block;
-  color: #8f96a3;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.gauntlet-panel--client .gauntlet-chips {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
-  gap: 10px;
-  margin: 10px 0 0;
-  padding: 0;
-  overflow: visible;
-}
-
-.gauntlet-panel--client .gauntlet-chip {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  min-height: 28px;
-  padding: 7px 12px;
-  background: #111111;
-  border: 1px solid #2e2e2e;
-  border-radius: 4px;
-}
-
-.gauntlet-panel--client .gauntlet-chip::before {
-  position: static;
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  margin: 0;
-}
-
-.gauntlet-panel--client .gauntlet-chip__year {
-  padding: 0;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.gauntlet-panel--client .gauntlet-chip__detail {
-  display: inline;
-  color: #ffffff;
-  font-size: 11px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.gauntlet-panel--client .gauntlet-chip--failed .gauntlet-chip__detail {
-  color: #ff7076;
-}
-
-.gauntlet-panel--client .gauntlet-chip--exhausted .gauntlet-chip__detail {
-  color: #e1c26e;
-}
-
-.gauntlet-panel--client .gauntlet-chip--survived .gauntlet-chip__detail {
-  color: #72d6ad;
-}
-
-.gauntlet-panel--client .gauntlet-panel__narrative {
-  margin: 12px 0 0;
-  color: #c3cad4;
-  font-size: 12px;
-  line-height: 1.3;
-  text-align: left;
-}
-
-.gauntlet-panel--client .gauntlet-panel__note {
-  display: block;
-  margin: 6px 0 0;
-  color: #8f96a3;
-  font-size: 10px;
-  text-align: left;
-}
-
-.gauntlet-panel--client .gauntlet-panel__loading {
-  margin: 0;
-  color: #8f96a3;
-  font-size: 10px;
-  text-align: left;
-}
-
-@media (max-width: 720px) {
-  .gauntlet-panel--client {
-    width: calc(100vw - 24px);
-  }
-}
 
 .client-hud__model-basis,
 .client-hud__plan-basis {
