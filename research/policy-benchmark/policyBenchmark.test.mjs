@@ -10,10 +10,12 @@ import {
   assessVerdict,
   buildAnnualBlocks,
   buildCounterpartEnvelope,
+  chooseFrozenPair,
   EXPECTED_INPUT_SHA256,
   interpolateValue,
   makeBootstrapIndices,
   pairedBootstrapMetrics,
+  pooledBootstrapMetrics,
   simulatePolicyPair,
   solveDynamicPolicy,
   summarizeOutcomes,
@@ -162,6 +164,17 @@ test('Bellman interpolation is exact and the breach penalty is absorbing', () =>
   const choice = solveDynamicPolicy('freedom', [{ ...cell, equity: Array.from({ length: 12 }, () => 0), bond: Array.from({ length: 12 }, () => 0) }], choiceConfig, 0);
   const choiceRow = choice.policy.stateActionMap.find((row) => row.year === 0 && row.wealth === 100_000 && row.breached === false);
   assert.equal(choiceRow.action.spending, 5_000);
+  assert.equal(choice.valueAtStart, 5_000);
+});
+
+test('a refined controller freezes with its own matched counterpart', () => {
+  const selected = chooseFrozenPair([
+    { rho: 0, policyId: 'base', risk: 0.2, counterpartId: 'base-counterpart' },
+    { rho: 62_500, policyId: 'refined', risk: 0.105, counterpartId: 'refined-counterpart' },
+  ], 0.1);
+  assert.equal(selected.policyId, 'refined');
+  assert.equal(selected.rho, 62_500);
+  assert.equal(selected.counterpartId, 'refined-counterpart');
 });
 
 test('counterpart envelope evaluates every configured training path and keeps refinement metadata capped', () => {
@@ -214,6 +227,20 @@ test('paired bootstrap uses aggregate ratios and recomputes severe-tail summarie
   assert.equal(tail.tailShortfallReduction.estimate, (600 - 500) / 600);
 });
 
+test('pooled bootstrap is replicate-outer, reuses fold counts, and returns no index matrix', () => {
+  const outcome = (spending, shortfall = 0) => ({ fundedLifetimeSpending: spending, unpaidFloorObligations: shortfall, floorBreach: shortfall > 0, terminalWealth: 0, failureMonth: null, yearsAtFloor: 0, spendingAdjustments: 0, equityExposure: 0, turnover: 0, timeAtAllocationBounds: 0 });
+  const pairs = Array.from({ length: 6 }, (_, selection) => ({
+    folds: [
+      { optimized: Array.from({ length: 4 }, (_, path) => outcome(100 + selection + path)), counterpart: Array.from({ length: 4 }, (_, path) => outcome(90 + selection + path, path)) },
+      { optimized: Array.from({ length: 4 }, (_, path) => outcome(110 + selection + path)), counterpart: Array.from({ length: 4 }, (_, path) => outcome(95 + selection + path, path)) },
+    ],
+  }));
+  const result = pooledBootstrapMetrics(pairs, { resamples: 3, seed: 1 });
+  assert.equal(result.drawCount, 2 * 3 * 4);
+  assert.equal('indices' in result, false);
+  assert.equal(result.metrics.length, 6);
+});
+
 test('full configuration is locked and common-random matrices are identical for paired policies', () => {
   assert.equal(FULL_CONFIG.horizonYears, 35);
   assert.equal(FULL_CONFIG.trainingPaths, 20_000);
@@ -243,6 +270,10 @@ test('selected evidence is compact, interpretable for both families, and every t
   assert.equal((html.match(/class="table-wrap"/g) ?? []).length, (html.match(/<p class="scroll-cue"/g) ?? []).length);
   assert.doesNotMatch(html, /counterpart: \{"kind"/);
   assert.doesNotMatch(html, /actual funded-spending range: \$0-/);
+  for (const selection of report.frontiers[0].selectedByFold) {
+    assert.match(html, new RegExp(selection.policy.identity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(html, new RegExp(selection.counterpartId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
 });
 
 test('production aggregation considers every rho and allocation bounds are family-specific', () => {

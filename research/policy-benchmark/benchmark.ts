@@ -148,6 +148,7 @@ export interface FrontierResult {
   selectedByFold: readonly SelectedFoldPolicy[];
   learnedActionMap: readonly PolicyMapEntry[];
   trainingRiskMatched: boolean;
+  pooledPaired?: PairedResult;
 }
 
 export interface BenchmarkReport {
@@ -247,6 +248,7 @@ export interface DynamicPolicyResult {
   penaltyModel: 'absorbing-any-breach';
   firstBreachPenaltyApplications: number;
   repeatedBreachPenaltyApplications: number;
+  valueAtStart: number;
 }
 
 export interface CompressedCell extends AnnualBlock {
@@ -669,6 +671,7 @@ interface TrainedPolicy {
   baseStateCount: number;
   firstBreachPenaltyApplications: number;
   repeatedBreachPenaltyApplications: number;
+  initialValues: Float64Array;
 }
 
 function isAllowedAction(family: PolicyFamily, action: PolicyAction, priorSpending: number, spendingGrid: readonly number[]): boolean {
@@ -690,6 +693,7 @@ function trainPolicy(
   const baseStateCount = wealthCount * spendingCount;
   const stateCount = baseStateCount * 2;
   let nextValues = new Float64Array(stateCount);
+  let initialValues = new Float64Array(stateCount);
   const table: Int16Array[] = [];
   const defaultAction = getPolicyActions(family, config.priorSpending, config.spendingGrid)[0];
   let firstBreachPenaltyApplications = 0;
@@ -738,6 +742,7 @@ function trainPolicy(
       }
     }
     table[year] = decisions;
+    if (year === 0) initialValues = values;
     nextValues = values;
   }
   return {
@@ -751,6 +756,7 @@ function trainPolicy(
     baseStateCount,
     firstBreachPenaltyApplications,
     repeatedBreachPenaltyApplications,
+    initialValues,
   };
 }
 
@@ -766,6 +772,7 @@ export function solveDynamicPolicy(
     penaltyModel: 'absorbing-any-breach',
     firstBreachPenaltyApplications: policy.firstBreachPenaltyApplications,
     repeatedBreachPenaltyApplications: policy.repeatedBreachPenaltyApplications,
+    valueAtStart: policyAction(policy, 0, config.startingWealth[0] ?? 0, config.priorSpending, false).spending,
   };
 }
 
@@ -1009,6 +1016,138 @@ export function pairedBootstrapMetrics(
   };
 }
 
+export interface FrozenPairCandidate {
+  rho: number;
+  policyId: string;
+  risk: number;
+  counterpartId: string;
+}
+
+export function chooseFrozenPair(
+  candidates: readonly FrozenPairCandidate[],
+  counterpartRisk: number,
+): FrozenPairCandidate {
+  const matched = candidates
+    .filter((candidate) => Math.abs(candidate.risk - counterpartRisk) <= 0.005)
+    .sort((left, right) => Math.abs(left.risk - counterpartRisk) - Math.abs(right.risk - counterpartRisk) || left.rho - right.rho);
+  return matched[0] ?? [...candidates].sort((left, right) => Math.abs(left.risk - counterpartRisk) - Math.abs(right.risk - counterpartRisk) || left.rho - right.rho)[0];
+}
+
+interface PooledBootstrapPair {
+  folds: readonly {
+    optimized: readonly PathOutcome[];
+    counterpart: readonly PathOutcome[];
+  }[];
+}
+
+function pooledRawMetrics(
+  columns: readonly { optimized: BootstrapColumn; counterpart: BootstrapColumn; counts: Uint32Array; sampleCount: number }[],
+): { spending: number; tail: number; risk: number } {
+  let optimizedSpending = 0;
+  let counterpartSpending = 0;
+  let optimizedTail = 0;
+  let counterpartTail = 0;
+  let risk = 0;
+  let totalCount = 0;
+  for (const fold of columns) {
+    totalCount += fold.sampleCount;
+    for (let index = 0; index < fold.sampleCount; index += 1) {
+      const count = fold.counts[index];
+      optimizedSpending += fold.optimized.spending[index] * count;
+      counterpartSpending += fold.counterpart.spending[index] * count;
+      risk += (fold.optimized.breach[index] - fold.counterpart.breach[index]) * count;
+    }
+    optimizedTail += weightedTail(fold.optimized, fold.counts, fold.sampleCount) * fold.sampleCount;
+    counterpartTail += weightedTail(fold.counterpart, fold.counts, fold.sampleCount) * fold.sampleCount;
+  }
+  const denominator = Math.max(1, totalCount);
+  optimizedSpending /= denominator;
+  counterpartSpending /= denominator;
+  optimizedTail /= denominator;
+  counterpartTail /= denominator;
+  return {
+    spending: (optimizedSpending - counterpartSpending) / Math.max(1, Math.abs(counterpartSpending)),
+    tail: (counterpartTail - optimizedTail) / Math.max(1, Math.abs(counterpartTail)),
+    risk: risk / denominator,
+  };
+}
+
+export function pooledBootstrapMetrics(
+  pairs: readonly PooledBootstrapPair[],
+  options: { resamples: number; seed: number; riskThreshold?: number },
+): { metrics: PairedResult[]; drawCount: number } {
+  if (pairs.length === 0) return { metrics: [], drawCount: 0 };
+  const foldCount = Math.max(...pairs.map((pair) => pair.folds.length));
+  const prepared = pairs.map((pair) => pair.folds.map((fold) => {
+    const pathCount = Math.min(fold.optimized.length, fold.counterpart.length);
+    return {
+      optimized: prepareBootstrapColumn(fold.optimized.slice(0, pathCount)),
+      counterpart: prepareBootstrapColumn(fold.counterpart.slice(0, pathCount)),
+      pathCount,
+    };
+  }));
+  const countsByFold = Array.from({ length: foldCount }, (_, foldIndex) => new Uint32Array(prepared[0]?.[foldIndex]?.pathCount ?? 0));
+  const pointColumns = prepared[0].map((fold, foldIndex) => ({
+    optimized: fold.optimized,
+    counterpart: fold.counterpart,
+    counts: Uint32Array.from({ length: fold.pathCount }, () => 1),
+    sampleCount: fold.pathCount,
+  }));
+  const point = pairs.map((_, pairIndex) => pooledRawMetrics(prepared[pairIndex].map((fold, foldIndex) => ({
+    optimized: fold.optimized,
+    counterpart: fold.counterpart,
+    counts: pointColumns[foldIndex]?.counts ?? new Uint32Array(fold.pathCount),
+    sampleCount: fold.pathCount,
+  }))));
+  const samples = pairs.map(() => ({ spending: [] as number[], tail: [] as number[], risk: [] as number[] }));
+  let drawCount = 0;
+  for (let sample = 0; sample < Math.max(0, options.resamples); sample += 1) {
+    for (let foldIndex = 0; foldIndex < foldCount; foldIndex += 1) {
+      const counts = countsByFold[foldIndex];
+      counts.fill(0);
+      const pathCount = counts.length;
+      for (let draw = 0; draw < pathCount; draw += 1) {
+        const random = streamHash((options.seed + Math.imul(sample + 1, 0x9e3779b9) + Math.imul(foldIndex + 1, 0x85ebca6b) + Math.imul(draw + 1, 0xc2b2ae35)) >>> 0);
+        counts[Math.min(pathCount - 1, Math.floor(random * pathCount))] += 1;
+      }
+      drawCount += pathCount;
+    }
+    for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
+      const raw = pooledRawMetrics(prepared[pairIndex].map((fold, foldIndex) => ({
+        optimized: fold.optimized,
+        counterpart: fold.counterpart,
+        counts: countsByFold[foldIndex] ?? new Uint32Array(fold.pathCount),
+        sampleCount: fold.pathCount,
+      })));
+      samples[pairIndex].spending.push(raw.spending);
+      samples[pairIndex].tail.push(raw.tail);
+      samples[pairIndex].risk.push(raw.risk);
+    }
+  }
+  const interval = (values: readonly number[], estimate: number): PairedInterval => options.resamples <= 0 || values.length === 0
+    ? { estimate, lower: estimate, upper: estimate }
+    : { estimate, lower: quantile(values, 0.025), upper: quantile(values, 0.975) };
+  const riskThreshold = options.riskThreshold ?? 0.01;
+  return {
+    drawCount,
+    metrics: point.map((estimate, index) => {
+      const sample = samples[index];
+      const riskInterval = interval(sample.risk, estimate.risk);
+      return {
+        fundedSpendingGain: interval(sample.spending, estimate.spending),
+        tailShortfallReduction: interval(sample.tail, estimate.tail),
+        breachProbabilityDifference: riskInterval,
+        pointRiskDifference: estimate.risk,
+        pointRiskMatched: Math.abs(estimate.risk) <= 0.005,
+        matchedRisk: options.resamples <= 0
+          ? Math.abs(estimate.risk) <= riskThreshold
+          : riskInterval.lower >= -riskThreshold && riskInterval.upper <= riskThreshold,
+        winningPointEstimate: estimate.spending > 0 || estimate.tail > 0 ? 'optimized' : estimate.spending < 0 || estimate.tail < 0 ? 'counterpart' : 'tie',
+      };
+    }),
+  };
+}
+
 function pairedResult(
   optimized: readonly PathOutcome[],
   counterpart: readonly PathOutcome[],
@@ -1210,35 +1349,27 @@ function frontierVerdict(
   runtimeOk = true,
   integrityOk = true,
   sensitivityOk = true,
+  pooled?: PairedResult,
 ): Verdict {
   if (preview) return 'inconclusive';
-  const stable = foldResults.every((fold) => fold.validation.paired.winningPointEstimate !== 'counterpart');
-  const foldVerdicts = foldResults.map((fold) => assessVerdict({
-    matchedRisk: fold.train.paired.pointRiskMatched && fold.validation.paired.matchedRisk,
+  const paired = pooled ?? foldResults[0]?.validation.paired;
+  if (!paired) return 'inconclusive';
+  const stable = paired.winningPointEstimate !== 'counterpart';
+  return assessVerdict({
+    matchedRisk: foldResults.every((fold) => fold.train.paired.pointRiskMatched) && paired.matchedRisk,
     runtimeOk,
     integrityOk,
     sensitivityOk: sensitivityOk && stable,
-    spendingGainCiLow: fold.validation.paired.fundedSpendingGain.lower,
-    tailReductionCiLow: fold.validation.paired.tailShortfallReduction.lower,
-    spendingDeltaCiLow: fold.validation.paired.fundedSpendingGain.lower,
-  }));
-  if (foldVerdicts.every((verdict) => verdict === 'pass')) return 'pass';
-  if (foldVerdicts.some((verdict) => verdict === 'inconclusive')) return 'inconclusive';
-  return 'stop';
+    spendingGainCiLow: paired.fundedSpendingGain.lower,
+    tailReductionCiLow: paired.tailShortfallReduction.lower,
+    spendingDeltaCiLow: paired.fundedSpendingGain.lower,
+  });
 }
 
 export function aggregateVerdicts(items: readonly Pick<FrontierResult, 'rho' | 'startingWealth' | 'verdict'>[], mode: 'preview' | 'full' = 'full'): Verdict {
   if (mode === 'preview') return 'inconclusive';
-  const byRho = new Map<number, typeof items>();
-  for (const item of items) byRho.set(item.rho, [...(byRho.get(item.rho) ?? []), item]);
-  let sawInconclusive = false;
-  for (const rhoItems of byRho.values()) {
-    const byWealth = new Map<number, Verdict>();
-    for (const item of rhoItems) byWealth.set(item.startingWealth, item.verdict);
-    if ([...byWealth.values()].filter((verdict) => verdict === 'pass').length >= 2) return 'pass';
-    sawInconclusive ||= [...byWealth.values()].some((verdict) => verdict === 'inconclusive');
-  }
-  return sawInconclusive ? 'inconclusive' : 'stop';
+  if (items.filter((item) => item.verdict === 'pass').length >= 2) return 'pass';
+  return items.some((item) => item.verdict === 'inconclusive') ? 'inconclusive' : 'stop';
 }
 
 interface PreparedFold {
@@ -1338,10 +1469,6 @@ interface PreparedFold {
   const finiteOutput = !JSON.stringify(frontiers).match(/NaN|Infinity/);
   const stableWinningPointEstimates = frontiers.every((frontier) => frontier.foldResults.every((fold) => fold.validation.paired.winningPointEstimate !== 'counterpart'));
   const integrityOk = finiteOutput && inputDigestMatches && zeroTrainValidationOverlap;
-  const finalFrontiers = frontiers.map((frontier) => ({
-    ...frontier,
-    verdict: runtimeOk && integrityOk ? frontier.verdict : 'inconclusive' as Verdict,
-  }));
   const mathematical = finalFrontiers.filter((frontier) => frontier.family === 'freedom');
   const implementable = finalFrontiers.filter((frontier) => frontier.family === 'implementable');
   return {
@@ -1409,8 +1536,9 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
     penalties: [...input.penalties],
   };
   const series = recoverHistoricalSeries();
-  const bootstrapIndicesByFold = series.folds.map((_, foldIndex) => makeBootstrapIndexRows(config.validationPaths, config.bootstrapResamples, config.bootstrapSeed + foldIndex));
   const frontiers: FrontierResult[] = [];
+  const pooledInputs: Array<{ key: string; folds: PooledBootstrapPair['folds'] }> = [];
+  const pooledByKey = new Map<string, PairedResult>();
 
   for (const family of ['freedom', 'implementable'] as const) {
     const preparedFolds: PreparedFold[] = series.folds.map((fold, foldIndex) => {
@@ -1423,6 +1551,7 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
     });
     const selectedByWealth = new Map<number, SelectedFoldPolicy[]>();
     const foldResultsByWealth = new Map<number, FrontierFoldResult[]>();
+    const validationOutcomesByWealth = new Map<number, Array<{ optimized: PathOutcome[]; counterpart: PathOutcome[] }>>();
 
     for (let foldIndex = 0; foldIndex < preparedFolds.length; foldIndex += 1) {
       const prepared = preparedFolds[foldIndex];
@@ -1447,15 +1576,16 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
       for (const wealth of config.startingWealth) {
         const envelope = envelopeByWealth.get(wealth);
         if (!envelope) continue;
-        const candidates: Array<{ solved: SolvedController; point: CounterpartPoint; history: number[] }> = [];
+          const candidates: Array<{ solved: SolvedController; point: CounterpartPoint; history: number[] }> = [];
         const baseRhos = [...config.penalties].sort((left, right) => left - right);
         for (const rho of baseRhos) {
           const solved = solve(rho);
           const optimizedTraining = solved.outcomes.get(wealth) ?? [];
-          const optimizedRisk = summarizeOutcomes(optimizedTraining).floorBreachProbability;
+            const optimizedRisk = summarizeOutcomes(optimizedTraining).floorBreachProbability;
           envelope.optimizedRiskByRho.set(rho, optimizedRisk);
-          let point = chooseMatchedPoint(envelope.points, optimizedRisk, rho);
-          const history: number[] = [];
+            let point = chooseMatchedPoint(envelope.points, optimizedRisk, rho);
+            const history: number[] = [];
+            let refinedMatch: SolvedController | undefined;
           if (!point) {
             let lower: SolvedController | undefined;
             let upper: SolvedController | undefined;
@@ -1482,12 +1612,18 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
                 if (refinedRisk < target) lower = refined;
                 else upper = refined;
               } else {
-                candidates.push({ solved: refined, point, history: [...history] });
+                refinedMatch = refined;
               }
             }
-          }
-          if (!point) point = chooseFallbackPoint(envelope.points, optimizedRisk, rho);
-          candidates.push({ solved, point, history });
+            if (refinedMatch) {
+              candidates.push({ solved: refinedMatch, point: point!, history: [...history] });
+            } else {
+              if (!point) point = chooseFallbackPoint(envelope.points, optimizedRisk, rho);
+              candidates.push({ solved, point, history });
+            }
+          } else {
+            candidates.push({ solved, point, history });
+        }
         }
         const selected = candidates.sort((left, right) => Number(right.point.pointRiskMatched) - Number(left.point.pointRiskMatched) || right.point.objective - left.point.objective || left.solved.rho - right.solved.rho)[0];
         if (!selected) continue;
@@ -1496,7 +1632,7 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
         const validationOptimized = makeValidationOutcomes(selected.solved.policy, family, wealth, prepared.segments, prepared.validationStarts, config);
         const validationCounterpart = makeValidationOutcomes(selected.point.spec, family, wealth, prepared.segments, prepared.validationStarts, config);
         const trainPaired = pairedResult(optimizedTraining, counterpartTraining, config, foldIndex * 100 + wealth / 1000, 0.005, undefined, 0);
-        const validationPaired = pairedResult(validationOptimized, validationCounterpart, config, foldIndex * 100 + 50 + wealth / 1000, 0.01, bootstrapIndicesByFold[foldIndex], config.bootstrapResamples);
+          const validationPaired = pairedResult(validationOptimized, validationCounterpart, config, foldIndex * 100 + 50 + wealth / 1000, 0.01, undefined, 0);
         const foldResult: FrontierFoldResult = {
           fold: prepared.fold.name,
           train: { optimized: summarizeOutcomes(optimizedTraining), counterpart: summarizeOutcomes(counterpartTraining), paired: trainPaired },
@@ -1514,8 +1650,9 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
           trainingRiskDifference: trainPaired.pointRiskDifference,
           trainingRiskMatched: trainPaired.pointRiskMatched,
         };
-        selectedByWealth.set(wealth, [...(selectedByWealth.get(wealth) ?? []), selection]);
-        foldResultsByWealth.set(wealth, [...(foldResultsByWealth.get(wealth) ?? []), foldResult]);
+          selectedByWealth.set(wealth, [...(selectedByWealth.get(wealth) ?? []), selection]);
+          foldResultsByWealth.set(wealth, [...(foldResultsByWealth.get(wealth) ?? []), foldResult]);
+          validationOutcomesByWealth.set(wealth, [...(validationOutcomesByWealth.get(wealth) ?? []), { optimized: validationOptimized, counterpart: validationCounterpart }]);
       }
     }
 
@@ -1524,13 +1661,16 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
       const foldResults = foldResultsByWealth.get(wealth) ?? [];
       const first = selectedByFold[0];
       if (!first) continue;
+      pooledInputs.push({ key: `${family}|${wealth}`, folds: (validationOutcomesByWealth.get(wealth) ?? []) });
+      const pooledMetric = pooledBootstrapMetrics([pooledInputs.at(-1)!], { resamples: config.bootstrapResamples, seed: config.bootstrapSeed }).metrics[0];
+      if (pooledMetric) pooledByKey.set(`${family}|${wealth}`, pooledMetric);
       frontiers.push({
         family,
         rho: first.rho,
         startingWealth: wealth,
         verdict: frontierVerdict(family, foldResults, config.mode === 'preview'),
         foldResults,
-        optimizedPolicy: first.policy,
+        optimizedPolicy: { ...first.policy, identity: selectedByFold.map((selection) => `${selection.policy.identity} [${selection.counterpartId}]`).join(' | ') },
         counterpartPolicy: first.counterpart,
         selectedByFold,
         learnedActionMap: selectedByFold.flatMap((selection) => selection.policy.stateActionMap),
@@ -1544,7 +1684,13 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
   const integrity = validateBenchmarkIntegrity(series.inputSha256, frontiers, series.trainingValidationOverlap);
   const integrityOk = integrity.finite && integrity.inputDigestMatches && integrity.zeroTrainValidationOverlap;
   const stableWinningPointEstimates = frontiers.every((frontier) => frontier.foldResults.every((fold) => fold.validation.paired.winningPointEstimate !== 'counterpart'));
-  const finalFrontiers = frontiers.map((frontier) => ({ ...frontier, verdict: runtimeOk && integrityOk ? frontier.verdict : 'inconclusive' as Verdict }));
+  const finalFrontiers = frontiers.map((frontier) => {
+    const pooledPaired = pooledByKey.get(`${frontier.family}|${frontier.startingWealth}`);
+    const verdict = runtimeOk && integrityOk
+      ? frontierVerdict(frontier.family, frontier.foldResults, config.mode === 'preview', runtimeOk, integrityOk, stableWinningPointEstimates, pooledPaired)
+      : 'inconclusive' as Verdict;
+    return { ...frontier, pooledPaired, verdict };
+  });
   return {
     schemaVersion: 1,
     mode: config.mode,

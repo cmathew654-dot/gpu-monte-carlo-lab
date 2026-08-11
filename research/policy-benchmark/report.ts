@@ -64,8 +64,7 @@ function ci(value: { estimate: number; lower: number; upper: number }, isMoney =
 }
 
 /*
-
-    const x = 42 + index * 128;
+  const x = 42 + index * 128;
     const scale = (value: number) => 132 - Math.min(104, Math.max(0, value / 1_500_000 * 104));
     return `<g><line x1="${x}" y1="24" x2="${x}" y2="142" stroke="#d7dce2"/><circle cx="${x - 7}" cy="${scale(optimized)}" r="4" fill="#0b5cff"><title>${escapeHtml(money(optimized))} optimized</title></circle><circle cx="${x + 7}" cy="${scale(counterpart)}" r="4" fill="#b42318"><title>${escapeHtml(money(counterpart))} counterpart</title></circle><text x="${x}" y="160" text-anchor="middle">${escapeHtml(money(amount))}</text></g>`;
   }).join('');
