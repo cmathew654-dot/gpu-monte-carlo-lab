@@ -9,8 +9,12 @@ import {
   annualAffineTransition,
   assessVerdict,
   buildAnnualBlocks,
+  buildCounterpartEnvelope,
+  EXPECTED_INPUT_SHA256,
   interpolateValue,
+  makeBootstrapIndices,
   pairedBootstrapMetrics,
+  simulatePolicyPair,
   solveDynamicPolicy,
   summarizeOutcomes,
   allocationBound,
@@ -18,6 +22,7 @@ import {
   guardrailAction,
   makeCommonBlockStarts,
   recoverHistoricalSeries,
+  validateBenchmarkIntegrity,
   runBenchmark,
 } from './benchmark.ts';
 import { renderBenchmarkHtml } from './report.ts';
@@ -113,15 +118,14 @@ test('benchmark output is deterministic apart from runtime and renders an access
   assert.match(html, /<table/);
   assert.match(html, /scroll-cue/);
   assert.match(html, /position:sticky/);
-  assert.match(html, /actual funded-spending range/);
+  assert.match(html, /actual observed funded-spending range/);
   assert.match(html, /Limitations/);
   assert.doesNotMatch(html, /Inter/);
   assert.doesNotMatch(html, /<script[^>]+src=/i);
   assert.ok(first.frontiers.every((frontier) => frontier.selectedByFold.length === 2));
-  assert.ok(first.frontiers.every((frontier) => frontier.counterpartEnvelope.length > 0));
-  assert.ok(first.frontiers.every((frontier) => frontier.selectedByFold.every((selection) => selection.counterpartEnvelope.some((point) => point.pointRiskMatched))));
+  assert.ok(first.frontiers.every((frontier) => frontier.selectedByFold.every((selection) => selection.counterpart.kind === 'fixed' || selection.counterpart.kind === 'guardrail')));
   assert.ok(first.frontiers.every((frontier) => frontier.learnedActionMap.length > 0));
-  assert.ok(first.frontiers.filter((frontier) => frontier.family === 'implementable').every((frontier) => frontier.feasibleActions.every((action) => action.spending >= 4_500)));
+  assert.ok(first.frontiers.filter((frontier) => frontier.family === 'implementable').every((frontier) => frontier.learnedActionMap.every((row) => row.priorSpending !== 5_000 || row.spendingAction >= 4_500)));
   const validationChanged = runBenchmark({ ...config, validationSeeds: [51011, 51012] });
   assert.deepEqual(first.frontiers.map((frontier) => frontier.optimizedPolicy), validationChanged.frontiers.map((frontier) => frontier.optimizedPolicy));
 });
@@ -153,6 +157,46 @@ test('Bellman interpolation is exact and the breach penalty is absorbing', () =>
   assert.equal(solved.penaltyModel, 'absorbing-any-breach');
   assert.ok(solved.firstBreachPenaltyApplications > 0);
   assert.ok(solved.repeatedBreachPenaltyApplications === 0);
+
+  const choiceConfig = { ...PREVIEW_CONFIG, horizonYears: 1, wealthGrid: [0, 100_000], spendingGrid: [4_000, 5_000], startingWealth: [100_000], representatives: 1, penalties: [0] };
+  const choice = solveDynamicPolicy('freedom', [{ ...cell, equity: Array.from({ length: 12 }, () => 0), bond: Array.from({ length: 12 }, () => 0) }], choiceConfig, 0);
+  const choiceRow = choice.policy.stateActionMap.find((row) => row.year === 0 && row.wealth === 100_000 && row.breached === false);
+  assert.equal(choiceRow.action.spending, 5_000);
+});
+
+test('counterpart envelope evaluates every configured training path and keeps refinement metadata capped', () => {
+  const block = {
+    startDate: 'synthetic',
+    equity: Array.from({ length: 12 }, () => 0.01),
+    bond: Array.from({ length: 12 }, () => 0.005),
+    annualEquityReturn: 0.1268,
+    annualBondReturn: 0.0617,
+    equityDrawdown: 0,
+  };
+  const config = { ...PREVIEW_CONFIG, horizonYears: 1, trainingPaths: 4, representatives: 1, spendingGrid: [4_500, 5_000], freedomEquityGrid: [0, 0.5, 1], implementableEquityGrid: [0.3, 0.6, 0.8], wealthGrid: [0, 100_000], startingWealth: [100_000], bootstrapResamples: 0 };
+  const starts = [[0], [0], [0], [0]];
+  const envelope = buildCounterpartEnvelope('freedom', [block], starts, 100_000, config, 0);
+  assert.ok(envelope.points.length > 0);
+  assert.ok(envelope.points.every((point) => point.training.pathCount === starts.length));
+  const report = runBenchmark(config);
+  assert.ok(report.frontiers.every((frontier) => frontier.selectedByFold.every((selection) => selection.refinementHistory.length <= 3)));
+});
+
+test('paired policy paths expose aligned CRN ids while policy outcomes differ', () => {
+  const block = {
+    startDate: 'synthetic',
+    equity: Array.from({ length: 12 }, () => 0.01),
+    bond: Array.from({ length: 12 }, () => 0.005),
+    annualEquityReturn: 0.1268,
+    annualBondReturn: 0.0617,
+    equityDrawdown: 0,
+  };
+  const config = { ...PREVIEW_CONFIG, horizonYears: 1, wealthGrid: [0, 100_000], startingWealth: [100_000] };
+  const starts = makeCommonBlockStarts(4, 1, 1, 123);
+  const pair = simulatePolicyPair('freedom', { kind: 'fixed', equity: 0.6, spending: 5_000 }, { kind: 'fixed', equity: 0.6, spending: 4_500 }, 100_000, [block], starts, config);
+  assert.deepEqual(pair.left.pathIds, pair.right.pathIds);
+  assert.deepEqual(pair.left.pathIds, [0, 1, 2, 3]);
+  assert.notDeepEqual(pair.left.outcomes.map((outcome) => outcome.fundedLifetimeSpending), pair.right.outcomes.map((outcome) => outcome.fundedLifetimeSpending));
 });
 
 test('paired bootstrap uses aggregate ratios and recomputes severe-tail summaries', () => {
@@ -175,8 +219,30 @@ test('full configuration is locked and common-random matrices are identical for 
   assert.equal(FULL_CONFIG.trainingPaths, 20_000);
   assert.equal(FULL_CONFIG.validationPaths, 50_000);
   assert.equal(FULL_CONFIG.representatives, 24);
+  assert.equal(FULL_CONFIG.bootstrapResamples, 2_000);
   assert.deepEqual(FULL_CONFIG.penalties, [0, 125_000, 250_000, 500_000, 1_000_000, 2_000_000, 4_000_000, 8_000_000]);
   assert.deepEqual(makeCommonBlockStarts(3, 4, 10, 61001), makeCommonBlockStarts(3, 4, 10, 61001));
+});
+
+test('integrity pins the input digest and recursively rejects nested non-finite values', () => {
+  assert.equal(EXPECTED_INPUT_SHA256, '22cce814073cdf5fba6288afbdf7d4c78d000a7f62110c757905eb3076cc49e4');
+  const changed = validateBenchmarkIntegrity('changed', { nested: { value: 1 } }, []);
+  assert.equal(changed.inputDigestMatches, false);
+  const nonFinite = validateBenchmarkIntegrity(EXPECTED_INPUT_SHA256, { nested: [{ value: NaN }] }, []);
+  assert.equal(nonFinite.finite, false);
+});
+
+test('selected evidence is compact, interpretable for both families, and every table has a scroll cue', () => {
+  const config = { ...PREVIEW_CONFIG, trainingPaths: 4, validationPaths: 4, representatives: 1, bootstrapResamples: 4, horizonYears: 1, wealthGrid: [0, 100_000], startingWealth: [100_000], spendingGrid: [4_000, 4_500, 5_000], penalties: [0] };
+  const report = runBenchmark(config);
+  assert.ok(Buffer.byteLength(JSON.stringify(report), 'utf8') < 2_000_000);
+  assert.ok(report.frontiers.some((frontier) => frontier.family === 'freedom' && frontier.learnedActionMap.length > 0));
+  assert.ok(report.frontiers.some((frontier) => frontier.family === 'implementable' && frontier.learnedActionMap.length > 0));
+  assert.ok(report.frontiers.every((frontier) => frontier.learnedActionMap.every((row) => row.family && row.fold && typeof row.rho === 'number' && typeof row.year === 'number' && typeof row.wealth === 'number' && typeof row.priorSpending === 'number' && typeof row.spendingAction === 'number' && typeof row.equityAction === 'number')));
+  const html = renderBenchmarkHtml(report);
+  assert.equal((html.match(/class="table-wrap"/g) ?? []).length, (html.match(/<p class="scroll-cue"/g) ?? []).length);
+  assert.doesNotMatch(html, /counterpart: \{"kind"/);
+  assert.doesNotMatch(html, /actual funded-spending range: \$0-/);
 });
 
 test('production aggregation considers every rho and allocation bounds are family-specific', () => {

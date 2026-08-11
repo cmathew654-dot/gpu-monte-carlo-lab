@@ -40,6 +40,7 @@ export interface AnnualTransition {
   unpaidFloor: number;
   floorBreach: boolean;
   monthsAtFloor: number;
+  monthsScheduledAtFloor: number;
   failureMonth: number | null;
 }
 
@@ -145,8 +146,6 @@ export interface FrontierResult {
   optimizedPolicy: PolicySnapshot;
   counterpartPolicy: CounterpartSpec;
   selectedByFold: readonly SelectedFoldPolicy[];
-  counterpartEnvelope: readonly CounterpartPoint[];
-  feasibleActions: readonly PolicyAction[];
   learnedActionMap: readonly PolicyMapEntry[];
   trainingRiskMatched: boolean;
 }
@@ -197,16 +196,21 @@ export interface PolicySnapshot {
   defaultAction: PolicyAction;
   actionCount: number;
   identity: string;
-  feasibleActions: readonly PolicyAction[];
   stateActionMap: readonly PolicyMapEntry[];
 }
 
 export interface PolicyMapEntry {
+  family: PolicyFamily;
+  fold: string;
+  rho: number;
   year: number;
   breached: boolean;
   wealthIndex: number;
+  wealth: number;
   priorSpending: number;
   action: PolicyAction;
+  spendingAction: number;
+  equityAction: number;
 }
 
 export interface CounterpartSpec {
@@ -228,9 +232,13 @@ export interface CounterpartPoint {
 
 export interface SelectedFoldPolicy {
   fold: string;
+  rho: number;
   policy: PolicySnapshot;
   counterpart: CounterpartSpec;
-  counterpartEnvelope: readonly CounterpartPoint[];
+  controllerId: string;
+  counterpartId: string;
+  refinementHistory: readonly number[];
+  trainingRiskDifference: number;
   trainingRiskMatched: boolean;
 }
 
@@ -251,6 +259,7 @@ const VALIDATION_BLOCK_MONTHS = 36;
 const GRID_DOLLARS = 100;
 const PREVIEW_PENALTIES = [0, 1_000_000] as const;
 const FULL_PENALTIES = [0, 125_000, 250_000, 500_000, 1_000_000, 2_000_000, 4_000_000, 8_000_000] as const;
+export const EXPECTED_INPUT_SHA256 = '22cce814073cdf5fba6288afbdf7d4c78d000a7f62110c757905eb3076cc49e4';
 const FOLD_WINDOWS: readonly FoldWindow[] = [
   {
     name: 'E→L',
@@ -320,6 +329,27 @@ export const FULL_CONFIG: BenchmarkConfig = {
 
 function finite(value: number, fallback = 0): number {
   return Number.isFinite(value) ? value : fallback;
+}
+
+function recursivelyFinite(value: unknown, seen = new WeakSet<object>()): boolean {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (value === null || typeof value !== 'object') return true;
+  if (seen.has(value)) return true;
+  seen.add(value);
+  if (Array.isArray(value)) return value.every((item) => recursivelyFinite(item, seen));
+  return Object.values(value).every((item) => recursivelyFinite(item, seen));
+}
+
+export function validateBenchmarkIntegrity(
+  inputSha256: string,
+  value: unknown,
+  trainingValidationOverlap: readonly string[],
+): BenchmarkReport['integrity'] {
+  return {
+    finite: recursivelyFinite(value),
+    inputDigestMatches: inputSha256 === EXPECTED_INPUT_SHA256,
+    zeroTrainValidationOverlap: trainingValidationOverlap.length === 0,
+  };
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -438,6 +468,7 @@ export function annualAffineTransition(
   let fundedSpending = 0;
   let unpaidFloor = 0;
   let monthsAtFloor = 0;
+  let monthsScheduledAtFloor = 0;
   let failureMonth: number | null = null;
   for (let month = 0; month < equityReturns.length; month += 1) {
     const grossReturn = 1 + equity * equityReturns[month] + (1 - equity) * bondReturns[month];
@@ -445,6 +476,7 @@ export function annualAffineTransition(
     const funded = Math.min(wealth, spending);
     wealth -= funded;
     fundedSpending += funded;
+    if (spending === essentialFloor) monthsScheduledAtFloor += 1;
     if (funded < essentialFloor) {
       monthsAtFloor += 1;
       unpaidFloor += essentialFloor - funded;
@@ -457,6 +489,7 @@ export function annualAffineTransition(
     unpaidFloor: finite(unpaidFloor),
     floorBreach: unpaidFloor > 0,
     monthsAtFloor,
+    monthsScheduledAtFloor,
     failureMonth,
   };
 }
@@ -789,7 +822,7 @@ function simulatePath(
     fundedLifetimeSpending += transition.fundedSpending;
     unpaidFloorObligations += transition.unpaidFloor;
     floorBreach ||= transition.floorBreach;
-    yearsAtFloor += transition.monthsAtFloor / MONTHS_PER_YEAR;
+    yearsAtFloor += transition.monthsScheduledAtFloor / MONTHS_PER_YEAR;
     if (failureMonth === null && transition.failureMonth !== null) failureMonth = year * MONTHS_PER_YEAR + transition.failureMonth;
     if (action.spending !== priorSpending) spendingAdjustments += 1;
     equityExposure += action.equity;
@@ -867,26 +900,70 @@ function bootstrapIndexRow(pathCount: number, sample: number, seed: number): Uin
   return row;
 }
 
+export function makeBootstrapIndexRows(pathCount: number, resamples: number, seed: number): Uint32Array[] {
+  return Array.from({ length: Math.max(0, resamples) }, (_, sample) => bootstrapIndexRow(pathCount, sample, seed));
+}
+
 export function makeBootstrapIndices(pathCount: number, resamples: number, seed: number): number[][] {
-  return Array.from({ length: Math.max(0, resamples) }, (_, sample) => [...bootstrapIndexRow(pathCount, sample, seed)]);
+  return makeBootstrapIndexRows(pathCount, resamples, seed).map((row) => [...row]);
+}
+
+interface BootstrapColumn {
+  spending: Float64Array;
+  unpaidFloor: Float64Array;
+  breach: Uint8Array;
+  tailOrder: number[];
+}
+
+function prepareBootstrapColumn(outcomes: readonly PathOutcome[]): BootstrapColumn {
+  const spending = new Float64Array(outcomes.length);
+  const unpaidFloor = new Float64Array(outcomes.length);
+  const breach = new Uint8Array(outcomes.length);
+  for (let index = 0; index < outcomes.length; index += 1) {
+    spending[index] = outcomes[index].fundedLifetimeSpending;
+    unpaidFloor[index] = outcomes[index].unpaidFloorObligations;
+    breach[index] = outcomes[index].floorBreach ? 1 : 0;
+  }
+  return { spending, unpaidFloor, breach, tailOrder: Array.from({ length: outcomes.length }, (_, index) => index).sort((left, right) => unpaidFloor[right] - unpaidFloor[left] || right - left) };
+}
+
+function weightedTail(column: BootstrapColumn, counts: Uint32Array, sampleCount: number): number {
+  let remaining = Math.max(1, Math.ceil(sampleCount * 0.05));
+  let total = 0;
+  for (const index of column.tailOrder) {
+    const take = Math.min(remaining, counts[index]);
+    total += column.unpaidFloor[index] * take;
+    remaining -= take;
+    if (remaining <= 0) break;
+  }
+  return total / Math.max(1, Math.ceil(sampleCount * 0.05));
 }
 
 function aggregateBootstrapMetrics(
-  optimized: readonly PathOutcome[],
-  counterpart: readonly PathOutcome[],
+  optimized: BootstrapColumn,
+  counterpart: BootstrapColumn,
   indices: readonly number[],
+  counts: Uint32Array,
 ): { spending: number; tail: number; risk: number } {
-  const selectedOptimized = indices.map((index) => optimized[index]);
-  const selectedCounterpart = indices.map((index) => counterpart[index]);
-  const mean = (values: readonly number[]) => values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
-  const optimizedSpending = mean(selectedOptimized.map((outcome) => outcome.fundedLifetimeSpending));
-  const counterpartSpending = mean(selectedCounterpart.map((outcome) => outcome.fundedLifetimeSpending));
-  const optimizedTail = summarizeOutcomes(selectedOptimized).severeTailShortfall;
-  const counterpartTail = summarizeOutcomes(selectedCounterpart).severeTailShortfall;
+  counts.fill(0);
+  let optimizedSpending = 0;
+  let counterpartSpending = 0;
+  let risk = 0;
+  for (const index of indices) {
+    const safeIndex = Math.max(0, Math.min(index, optimized.spending.length - 1));
+    counts[safeIndex] += 1;
+    optimizedSpending += optimized.spending[safeIndex];
+    counterpartSpending += counterpart.spending[safeIndex];
+    risk += optimized.breach[safeIndex] - counterpart.breach[safeIndex];
+  }
+  optimizedSpending /= Math.max(1, indices.length);
+  counterpartSpending /= Math.max(1, indices.length);
+  const optimizedTail = weightedTail(optimized, counts, indices.length);
+  const counterpartTail = weightedTail(counterpart, counts, indices.length);
   return {
     spending: (optimizedSpending - counterpartSpending) / Math.max(1, Math.abs(counterpartSpending)),
     tail: (counterpartTail - optimizedTail) / Math.max(1, Math.abs(counterpartTail)),
-    risk: mean(selectedOptimized.map((outcome, index) => Number(outcome.floorBreach) - Number(selectedCounterpart[index].floorBreach))),
+    risk: risk / Math.max(1, indices.length),
   };
 }
 
@@ -907,11 +984,14 @@ export function pairedBootstrapMetrics(
       winningPointEstimate: 'tie',
     };
   }
+  const optimizedColumn = prepareBootstrapColumn(optimized.slice(0, pathCount));
+  const counterpartColumn = prepareBootstrapColumn(counterpart.slice(0, pathCount));
+  const counts = new Uint32Array(pathCount);
   const fullIndices = Array.from({ length: pathCount }, (_, index) => index);
-  const estimate = aggregateBootstrapMetrics(optimized, counterpart, fullIndices);
+  const estimate = aggregateBootstrapMetrics(optimizedColumn, counterpartColumn, fullIndices, counts);
   const samples = options.indices
-    ? options.indices.map((indices) => aggregateBootstrapMetrics(optimized, counterpart, indices))
-    : Array.from({ length: Math.max(0, options.resamples) }, (_, sample) => aggregateBootstrapMetrics(optimized, counterpart, bootstrapIndexRow(pathCount, sample, options.seed)));
+    ? options.indices.map((indices) => aggregateBootstrapMetrics(optimizedColumn, counterpartColumn, indices, counts))
+    : makeBootstrapIndexRows(pathCount, options.resamples, options.seed).map((indices) => aggregateBootstrapMetrics(optimizedColumn, counterpartColumn, indices, counts));
   const interval = (values: readonly number[], point: number): PairedInterval => options.resamples <= 0 || values.length === 0
     ? { estimate: point, lower: point, upper: point }
     : { estimate: point, lower: quantile(values, 0.025), upper: quantile(values, 0.975) };
@@ -936,9 +1016,10 @@ function pairedResult(
   seedOffset: number,
   riskThreshold = 0.01,
   indices?: readonly (readonly number[])[],
+  resamples = config.bootstrapResamples,
 ): PairedResult {
   return pairedBootstrapMetrics(optimized, counterpart, {
-    resamples: config.bootstrapResamples,
+    resamples,
     seed: config.bootstrapSeed + seedOffset,
     riskThreshold,
     indices,
@@ -995,7 +1076,7 @@ export function buildCounterpartEnvelope(
   optimizedTraining?: readonly PathOutcome[],
 ): { selected: CounterpartSpec; points: CounterpartPoint[] } {
   const candidates = buildCounterpartCandidates(family, config);
-  const pathCount = Math.min(config.representatives, starts.length);
+  const pathCount = starts.length;
   const points: CounterpartPoint[] = [];
   for (const candidate of candidates) {
     const outcomes: PathOutcome[] = [];
@@ -1041,7 +1122,7 @@ function selectCounterpart(
   return buildCounterpartEnvelope(family, blocks, starts, wealth, config, rho, optimizedTraining);
 }
 
-function policySnapshot(policy: TrainedPolicy, identity = `${policy.family}:rho=${policy.rho}`): PolicySnapshot {
+function policySnapshot(policy: TrainedPolicy, identity = `${policy.family}:rho=${policy.rho}`, fold = 'sample'): PolicySnapshot {
   const years = [...new Set([0, Math.floor(policy.table.length / 2), Math.max(0, policy.table.length - 1)])];
   const wealthIndices = [...new Set([0, Math.floor(policy.wealthGrid.length / 2), Math.max(0, policy.wealthGrid.length - 1)])];
   const priorIndices = policy.family === 'freedom'
@@ -1054,7 +1135,19 @@ function policySnapshot(policy: TrainedPolicy, identity = `${policy.family}:rho=
         for (const wealthIndex of wealthIndices) {
           const stateIndex = (breached ? policy.baseStateCount : 0) + priorIndex * policy.wealthGrid.length + wealthIndex;
           const action = policy.actions[policy.table[year][stateIndex]] ?? policy.defaultAction;
-          stateActionMap.push({ year, breached, wealthIndex, priorSpending: policy.spendingGrid[priorIndex], action });
+          stateActionMap.push({
+            family: policy.family,
+            fold,
+            rho: policy.rho,
+            year,
+            breached,
+            wealthIndex,
+            wealth: policy.wealthGrid[wealthIndex],
+            priorSpending: policy.spendingGrid[priorIndex],
+            action,
+            spendingAction: action.spending,
+            equityAction: action.equity,
+          });
         }
       }
     }
@@ -1066,7 +1159,6 @@ function policySnapshot(policy: TrainedPolicy, identity = `${policy.family}:rho=
     defaultAction: policy.defaultAction,
     actionCount: policy.actions.length,
     identity,
-    feasibleActions: policy.actions,
     stateActionMap,
   };
 }
@@ -1091,6 +1183,20 @@ function makeValidationOutcomes(
   config: BenchmarkConfig,
 ): PathOutcome[] {
   return Array.from({ length: starts.length }, (_, path) => simulatePath(family, policy, wealth, path, config.horizonYears, config, { kind: 'validation', segments, starts }));
+}
+
+export function simulatePolicyPair(
+  family: PolicyFamily,
+  left: CounterpartSpec,
+  right: CounterpartSpec,
+  wealth: number,
+  blocks: readonly AnnualBlock[],
+  starts: readonly (readonly number[])[],
+  config: BenchmarkConfig,
+): { left: { pathIds: number[]; outcomes: PathOutcome[] }; right: { pathIds: number[]; outcomes: PathOutcome[] } } {
+  const pathIds = starts.map((_, path) => path);
+  const outcomes = (policy: CounterpartSpec) => pathIds.map((path) => simulatePath(family, policy, wealth, path, config.horizonYears, config, { kind: 'training', blocks, starts }));
+  return { left: { pathIds, outcomes: outcomes(left) }, right: { pathIds: [...pathIds], outcomes: outcomes(right) } };
 }
 
 function combineOutcomes(results: readonly PathOutcome[][]): PathOutcome[] {
@@ -1145,93 +1251,8 @@ interface PreparedFold {
   cache: TransitionCache;
 }
 
-function legacyRunBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): BenchmarkReport {
-  const started = Date.now();
-  const config: BenchmarkConfig = {
-    ...input,
-    spendingGrid: [...input.spendingGrid],
-    freedomEquityGrid: [...input.freedomEquityGrid],
-    implementableEquityGrid: [...input.implementableEquityGrid],
-    wealthGrid: [...input.wealthGrid],
-    penalties: [...input.penalties],
-  };
-  const series = recoverHistoricalSeries();
-  const frontiers: FrontierResult[] = [];
-  for (let familyIndex = 0; familyIndex < 2; familyIndex += 1) {
-    const family: PolicyFamily = familyIndex === 0 ? 'freedom' : 'implementable';
-    for (const rho of config.penalties) {
-      const foldResultsByWealth = new Map<number, FrontierFoldResult[]>();
-      let selectedPolicy: PolicySnapshot | null = null;
-      let selectedCounterpart: CounterpartSpec | null = null;
-      for (let foldIndex = 0; foldIndex < series.folds.length; foldIndex += 1) {
-        const fold = series.folds[foldIndex];
-        const blocks = buildAnnualBlocks(series, fold.trainStart, fold.trainEnd === '2026-06' ? '2025-12' : fold.trainEnd);
-        const segments = buildValidationSegments(series, fold.validationStart, fold.validationEnd);
-        const trainingStarts = makeCommonBlockStarts(config.trainingPaths, config.horizonYears, blocks.length, config.trainingSeeds[foldIndex]);
-        const validationStarts = makeCommonBlockStarts(config.validationPaths, Math.ceil((config.horizonYears * MONTHS_PER_YEAR) / VALIDATION_BLOCK_MONTHS), segments.length, config.validationSeeds[foldIndex]);
-        const cells = compressTrainingBlocks(blocks);
-        const cache = createTransitionCache(family, cells, config);
-        const policy = trainPolicy(family, cells, config, rho, cache);
-        const counterpart = selectCounterpart(family, blocks, trainingStarts, config, rho);
-        selectedPolicy = policySnapshot(policy);
-        selectedCounterpart = counterpart;
-        const perWealth = new Map<number, FrontierFoldResult>();
-        for (const wealth of config.startingWealth) {
-          const trainOptimized = makeTrainingOutcomes(policy, family, wealth, blocks, trainingStarts, config);
-          const trainCounterpart = makeTrainingOutcomes(counterpart, family, wealth, blocks, trainingStarts, config);
-          const validationOptimized = makeValidationOutcomes(policy, family, wealth, segments, validationStarts, config);
-          const validationCounterpart = makeValidationOutcomes(counterpart, family, wealth, segments, validationStarts, config);
-          perWealth.set(wealth, {
-            fold: fold.name,
-            train: {
-              optimized: summarizeOutcomes(trainOptimized),
-              counterpart: summarizeOutcomes(trainCounterpart),
-              paired: pairedResult(trainOptimized, trainCounterpart, config, foldIndex * 100 + wealth / 1000, 0.005),
-            },
-            validation: {
-              optimized: summarizeOutcomes(validationOptimized),
-              counterpart: summarizeOutcomes(validationCounterpart),
-              paired: pairedResult(validationOptimized, validationCounterpart, config, foldIndex * 100 + 50 + wealth / 1000),
-            },
-          });
-        }
-        for (const [wealth, result] of perWealth) {
-          const results = foldResultsByWealth.get(wealth) ?? [];
-          results.push(result);
-          foldResultsByWealth.set(wealth, results);
-        }
-      }
-      const policy = selectedPolicy ?? { family, rho, horizonYears: config.horizonYears, defaultAction: { equity: 0.6, spending: config.targetSpending }, actionCount: getPolicyActions(family).length };
-      const counterpart = selectedCounterpart ?? { kind: 'fixed', equity: 0.6, spending: config.targetSpending };
-      for (const wealth of config.startingWealth) {
-        const foldResults = foldResultsByWealth.get(wealth) ?? [];
-        const verdict = frontierVerdict(family, foldResults, config.mode === 'preview');
-        frontiers.push({
-          family,
-          rho,
-          startingWealth: wealth,
-          verdict,
-          foldResults,
-          optimizedPolicy: policy,
-          counterpartPolicy: counterpart,
-          actionMap: getPolicyActions(family, config.priorSpending, config.spendingGrid),
-          trainingRiskMatched: foldResults.every((fold) => fold.train.paired.matchedRisk),
-        });
-      }
-    }
-  }
-  const mathematical = frontiers.filter((frontier) => frontier.family === 'freedom');
-  const implementable = frontiers.filter((frontier) => frontier.family === 'implementable');
-  const aggregateVerdict = (items: readonly FrontierResult[]): Verdict => {
-    if (config.mode === 'preview') return 'inconclusive';
-    const byWealth = new Map<number, FrontierResult>();
-    for (const item of items) if (!byWealth.has(item.startingWealth)) byWealth.set(item.startingWealth, item);
-    const passes = [...byWealth.values()].filter((item) => item.verdict === 'pass').length;
-    return passes >= 2 ? 'pass' : items.some((item) => item.verdict === 'inconclusive') ? 'inconclusive' : 'stop';
-  };
-  const report: BenchmarkReport = {
-    schemaVersion: 1,
-    mode: config.mode,
+/*
+
     previewBanner: config.mode === 'preview' ? 'PREVIEW — NO VERDICT' : 'FULL CROSS-FIT BENCHMARK',
     verdicts: { mathematical: aggregateVerdict(mathematical), implementable: aggregateVerdict(implementable) },
     config,
@@ -1259,46 +1280,6 @@ function legacyRunBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): BenchmarkR
   return report;
 }
 
-export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): BenchmarkReport {
-  const started = Date.now();
-  const config: BenchmarkConfig = {
-    ...input,
-    spendingGrid: [...input.spendingGrid],
-    freedomEquityGrid: [...input.freedomEquityGrid],
-    implementableEquityGrid: [...input.implementableEquityGrid],
-    wealthGrid: [...input.wealthGrid],
-    penalties: [...input.penalties],
-  };
-  const series = recoverHistoricalSeries();
-  const frontiers: FrontierResult[] = [];
-  for (const family of ['freedom', 'implementable'] as const) {
-    const preparedFolds: PreparedFold[] = series.folds.map((fold, foldIndex) => {
-      const blocks = buildAnnualBlocks(series, fold.trainStart, fold.trainEnd === '2026-06' ? '2025-12' : fold.trainEnd);
-      const segments = buildValidationSegments(series, fold.validationStart, fold.validationEnd);
-      const trainingStarts = makeCommonBlockStarts(config.trainingPaths, config.horizonYears, blocks.length, config.trainingSeeds[foldIndex]);
-      const validationStarts = makeCommonBlockStarts(config.validationPaths, Math.ceil((config.horizonYears * MONTHS_PER_YEAR) / VALIDATION_BLOCK_MONTHS), segments.length, config.validationSeeds[foldIndex]);
-      const cells = compressTrainingBlocks(blocks, config.representatives);
-      return { fold, blocks, segments, trainingStarts, validationStarts, cells, cache: createTransitionCache(family, cells, config) };
-    });
-
-    for (const rho of config.penalties) {
-      const foldResultsByWealth = new Map<number, FrontierFoldResult[]>();
-      const selectedByWealth = new Map<number, SelectedFoldPolicy[]>();
-      const envelopeByWealth = new Map<number, CounterpartPoint[]>();
-      for (let foldIndex = 0; foldIndex < preparedFolds.length; foldIndex += 1) {
-        const prepared = preparedFolds[foldIndex];
-        const policy = trainPolicy(family, prepared.cells, config, rho, prepared.cache);
-        const perWealth = new Map<number, FrontierFoldResult>();
-        for (const wealth of config.startingWealth) {
-          const trainOptimized = makeTrainingOutcomes(policy, family, wealth, prepared.blocks, prepared.trainingStarts, config);
-          const envelope = selectCounterpart(family, prepared.blocks, prepared.trainingStarts, wealth, config, rho, trainOptimized);
-          const counterpart = envelope.selected;
-          const trainCounterpart = makeTrainingOutcomes(counterpart, family, wealth, prepared.blocks, prepared.trainingStarts, config);
-          const validationOptimized = makeValidationOutcomes(policy, family, wealth, prepared.segments, prepared.validationStarts, config);
-          const validationCounterpart = makeValidationOutcomes(counterpart, family, wealth, prepared.segments, prepared.validationStarts, config);
-          const foldResult: FrontierFoldResult = {
-            fold: prepared.fold.name,
-            train: {
               optimized: summarizeOutcomes(trainOptimized),
               counterpart: summarizeOutcomes(trainCounterpart),
               paired: pairedResult(trainOptimized, trainCounterpart, config, foldIndex * 100 + wealth / 1000, 0.005),
@@ -1393,5 +1374,205 @@ export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): Benchmark
       implementableEquity: config.implementableEquityGrid,
       wealth: config.wealthGrid,
     },
+  };
+}
+
+*/
+interface SolvedController {
+  rho: number;
+  policy: TrainedPolicy;
+  outcomes: Map<number, PathOutcome[]>;
+}
+
+function chooseMatchedPoint(points: readonly CounterpartPoint[], optimizedRisk: number, rho: number): CounterpartPoint | undefined {
+  const normalized = points.map((point) => ({ ...point, pointRiskMatched: Math.abs(point.training.floorBreachProbability - optimizedRisk) <= 0.005 }));
+  return normalized
+    .filter((point) => point.nondominated && point.pointRiskMatched)
+    .sort((left, right) => right.objective - left.objective || JSON.stringify(left.spec).localeCompare(JSON.stringify(right.spec)))[0];
+}
+
+function chooseFallbackPoint(points: readonly CounterpartPoint[], optimizedRisk: number, rho: number): CounterpartPoint {
+  const normalized = points.map((point) => ({ ...point, pointRiskMatched: Math.abs(point.training.floorBreachProbability - optimizedRisk) <= 0.005 }));
+  return normalized
+    .filter((point) => point.nondominated)
+    .sort((left, right) => Number(right.pointRiskMatched) - Number(left.pointRiskMatched) || right.objective - left.objective || JSON.stringify(left.spec).localeCompare(JSON.stringify(right.spec)))[0] ?? normalized[0];
+}
+
+export function runBenchmark(input: BenchmarkConfig = PREVIEW_CONFIG): BenchmarkReport {
+  const started = Date.now();
+  const config: BenchmarkConfig = {
+    ...input,
+    spendingGrid: [...input.spendingGrid],
+    freedomEquityGrid: [...input.freedomEquityGrid],
+    implementableEquityGrid: [...input.implementableEquityGrid],
+    wealthGrid: [...input.wealthGrid],
+    penalties: [...input.penalties],
+  };
+  const series = recoverHistoricalSeries();
+  const bootstrapIndicesByFold = series.folds.map((_, foldIndex) => makeBootstrapIndexRows(config.validationPaths, config.bootstrapResamples, config.bootstrapSeed + foldIndex));
+  const frontiers: FrontierResult[] = [];
+
+  for (const family of ['freedom', 'implementable'] as const) {
+    const preparedFolds: PreparedFold[] = series.folds.map((fold, foldIndex) => {
+      const blocks = buildAnnualBlocks(series, fold.trainStart, fold.trainEnd === '2026-06' ? '2025-12' : fold.trainEnd);
+      const segments = buildValidationSegments(series, fold.validationStart, fold.validationEnd);
+      const trainingStarts = makeCommonBlockStarts(config.trainingPaths, config.horizonYears, blocks.length, config.trainingSeeds[foldIndex]);
+      const validationStarts = makeCommonBlockStarts(config.validationPaths, Math.ceil((config.horizonYears * MONTHS_PER_YEAR) / VALIDATION_BLOCK_MONTHS), segments.length, config.validationSeeds[foldIndex]);
+      const cells = compressTrainingBlocks(blocks, config.representatives);
+      return { fold, blocks, segments, trainingStarts, validationStarts, cells, cache: createTransitionCache(family, cells, config) };
+    });
+    const selectedByWealth = new Map<number, SelectedFoldPolicy[]>();
+    const foldResultsByWealth = new Map<number, FrontierFoldResult[]>();
+
+    for (let foldIndex = 0; foldIndex < preparedFolds.length; foldIndex += 1) {
+      const prepared = preparedFolds[foldIndex];
+      const envelopeByWealth = new Map<number, { points: CounterpartPoint[]; optimizedRiskByRho: Map<number, number> }>();
+      for (const wealth of config.startingWealth) {
+        const envelope = buildCounterpartEnvelope(family, prepared.blocks, prepared.trainingStarts, wealth, config, 0);
+        envelopeByWealth.set(wealth, { points: envelope.points, optimizedRiskByRho: new Map() });
+      }
+      const solvedControllers = new Map<number, SolvedController>();
+      const solve = (rho: number): SolvedController => {
+        const existing = solvedControllers.get(rho);
+        if (existing) return existing;
+        const policy = trainPolicy(family, prepared.cells, config, rho, prepared.cache);
+        const outcomes = new Map<number, PathOutcome[]>();
+        for (const wealth of config.startingWealth) outcomes.set(wealth, makeTrainingOutcomes(policy, family, wealth, prepared.blocks, prepared.trainingStarts, config));
+        const solved = { rho, policy, outcomes };
+        solvedControllers.set(rho, solved);
+        return solved;
+      };
+      for (const rho of config.penalties) solve(rho);
+
+      for (const wealth of config.startingWealth) {
+        const envelope = envelopeByWealth.get(wealth);
+        if (!envelope) continue;
+        const candidates: Array<{ solved: SolvedController; point: CounterpartPoint; history: number[] }> = [];
+        const baseRhos = [...config.penalties].sort((left, right) => left - right);
+        for (const rho of baseRhos) {
+          const solved = solve(rho);
+          const optimizedTraining = solved.outcomes.get(wealth) ?? [];
+          const optimizedRisk = summarizeOutcomes(optimizedTraining).floorBreachProbability;
+          envelope.optimizedRiskByRho.set(rho, optimizedRisk);
+          let point = chooseMatchedPoint(envelope.points, optimizedRisk, rho);
+          const history: number[] = [];
+          if (!point) {
+            let lower: SolvedController | undefined;
+            let upper: SolvedController | undefined;
+            const target = envelope.points.find((candidate) => candidate.nondominated)?.training.floorBreachProbability ?? optimizedRisk;
+            for (let index = 0; index + 1 < baseRhos.length; index += 1) {
+              const left = solve(baseRhos[index]);
+              const right = solve(baseRhos[index + 1]);
+              const leftRisk = summarizeOutcomes(left.outcomes.get(wealth) ?? []).floorBreachProbability;
+              const rightRisk = summarizeOutcomes(right.outcomes.get(wealth) ?? []).floorBreachProbability;
+              if ((leftRisk - target) * (rightRisk - target) <= 0 && leftRisk !== rightRisk) {
+                lower = leftRisk <= rightRisk ? left : right;
+                upper = leftRisk <= rightRisk ? right : left;
+                break;
+              }
+            }
+            for (let attempt = 0; attempt < 3 && lower && upper && !point; attempt += 1) {
+              const midpoint = (lower.rho + upper.rho) / 2;
+              history.push(midpoint);
+              const refined = solve(midpoint);
+              const refinedOutcomes = refined.outcomes.get(wealth) ?? [];
+              const refinedRisk = summarizeOutcomes(refinedOutcomes).floorBreachProbability;
+              point = chooseMatchedPoint(envelope.points, refinedRisk, midpoint);
+              if (!point) {
+                if (refinedRisk < target) lower = refined;
+                else upper = refined;
+              } else {
+                candidates.push({ solved: refined, point, history: [...history] });
+              }
+            }
+          }
+          if (!point) point = chooseFallbackPoint(envelope.points, optimizedRisk, rho);
+          candidates.push({ solved, point, history });
+        }
+        const selected = candidates.sort((left, right) => Number(right.point.pointRiskMatched) - Number(left.point.pointRiskMatched) || right.point.objective - left.point.objective || left.solved.rho - right.solved.rho)[0];
+        if (!selected) continue;
+        const optimizedTraining = selected.solved.outcomes.get(wealth) ?? [];
+        const counterpartTraining = makeTrainingOutcomes(selected.point.spec, family, wealth, prepared.blocks, prepared.trainingStarts, config);
+        const validationOptimized = makeValidationOutcomes(selected.solved.policy, family, wealth, prepared.segments, prepared.validationStarts, config);
+        const validationCounterpart = makeValidationOutcomes(selected.point.spec, family, wealth, prepared.segments, prepared.validationStarts, config);
+        const trainPaired = pairedResult(optimizedTraining, counterpartTraining, config, foldIndex * 100 + wealth / 1000, 0.005, undefined, 0);
+        const validationPaired = pairedResult(validationOptimized, validationCounterpart, config, foldIndex * 100 + 50 + wealth / 1000, 0.01, bootstrapIndicesByFold[foldIndex], config.bootstrapResamples);
+        const foldResult: FrontierFoldResult = {
+          fold: prepared.fold.name,
+          train: { optimized: summarizeOutcomes(optimizedTraining), counterpart: summarizeOutcomes(counterpartTraining), paired: trainPaired },
+          validation: { optimized: summarizeOutcomes(validationOptimized), counterpart: summarizeOutcomes(validationCounterpart), paired: validationPaired },
+        };
+        const selectedPolicy = policySnapshot(selected.solved.policy, `${family}|${prepared.fold.name}|rho=${selected.solved.rho}|wealth=${wealth}`, prepared.fold.name);
+        const selection: SelectedFoldPolicy = {
+          fold: prepared.fold.name,
+          rho: selected.solved.rho,
+          policy: selectedPolicy,
+          counterpart: selected.point.spec,
+          controllerId: `${family}|${prepared.fold.name}|rho=${selected.solved.rho}`,
+          counterpartId: `${selected.point.spec.kind}|equity=${selected.point.spec.equity}|spending=${selected.point.spec.spending}`,
+          refinementHistory: selected.history,
+          trainingRiskDifference: trainPaired.pointRiskDifference,
+          trainingRiskMatched: trainPaired.pointRiskMatched,
+        };
+        selectedByWealth.set(wealth, [...(selectedByWealth.get(wealth) ?? []), selection]);
+        foldResultsByWealth.set(wealth, [...(foldResultsByWealth.get(wealth) ?? []), foldResult]);
+      }
+    }
+
+    for (const wealth of config.startingWealth) {
+      const selectedByFold = selectedByWealth.get(wealth) ?? [];
+      const foldResults = foldResultsByWealth.get(wealth) ?? [];
+      const first = selectedByFold[0];
+      if (!first) continue;
+      frontiers.push({
+        family,
+        rho: first.rho,
+        startingWealth: wealth,
+        verdict: frontierVerdict(family, foldResults, config.mode === 'preview'),
+        foldResults,
+        optimizedPolicy: first.policy,
+        counterpartPolicy: first.counterpart,
+        selectedByFold,
+        learnedActionMap: selectedByFold.flatMap((selection) => selection.policy.stateActionMap),
+        trainingRiskMatched: selectedByFold.every((selection) => selection.trainingRiskMatched),
+      });
+    }
+  }
+
+  const runtimeMs = Date.now() - started;
+  const runtimeOk = runtimeMs <= 600_000;
+  const integrity = validateBenchmarkIntegrity(series.inputSha256, frontiers, series.trainingValidationOverlap);
+  const integrityOk = integrity.finite && integrity.inputDigestMatches && integrity.zeroTrainValidationOverlap;
+  const stableWinningPointEstimates = frontiers.every((frontier) => frontier.foldResults.every((fold) => fold.validation.paired.winningPointEstimate !== 'counterpart'));
+  const finalFrontiers = frontiers.map((frontier) => ({ ...frontier, verdict: runtimeOk && integrityOk ? frontier.verdict : 'inconclusive' as Verdict }));
+  return {
+    schemaVersion: 1,
+    mode: config.mode,
+    previewBanner: config.mode === 'preview' ? 'PREVIEW — NO VERDICT' : 'FULL CROSS-FIT BENCHMARK',
+    verdicts: {
+      mathematical: aggregateVerdicts(finalFrontiers.filter((frontier) => frontier.family === 'freedom'), config.mode),
+      implementable: aggregateVerdicts(finalFrontiers.filter((frontier) => frontier.family === 'implementable'), config.mode),
+    },
+    config,
+    inputSha256: series.inputSha256,
+    gitSha: config.gitSha ?? 'unknown',
+    runtimeMs,
+    runtimeOk,
+    integrity,
+    sensitivity: { penaltyCount: config.penalties.length, foldCount: series.folds.length, stableWinningPointEstimates },
+    folds: series.folds,
+    frontiers: finalFrontiers,
+    limitations: [
+      'Cross-fit is not an external never-touched dataset.',
+      'Bootstrap confidence intervals are conditional on two historical eras.',
+      'Thirty-six-month validation blocks miss longer dependence.',
+      'Mathematical freedom is not advice.',
+      'Implementable policy ignores taxes, costs, RMDs, cash flows, mortality, and allocation-change limits.',
+      'No consumption-smoothing utility is modeled.',
+      'Counterpart selection uses every configured training path; refinement history records at most three training-only midpoint attempts.',
+      'Validation bootstrap rows are generated once and reused only after the frozen pair is selected.',
+    ],
+    seeds: { training: config.trainingSeeds, validation: config.validationSeeds, bootstrap: config.bootstrapSeed },
+    grids: { spending: config.spendingGrid, freedomEquity: config.freedomEquityGrid, implementableEquity: config.implementableEquityGrid, wealth: config.wealthGrid },
   };
 }

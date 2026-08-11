@@ -46,7 +46,16 @@ function summaryCells(summary: OutcomeSummary): string {
 
 function summaryTable(title: string, optimized: OutcomeSummary, counterpart: OutcomeSummary): string {
   const headings = ['Mean funded', 'Median', 'P10', 'Floor breach', 'Severe tail', 'Median terminal', 'Failure month', 'Years at floor', 'Spend moves', 'Equity exposure', 'Turnover', 'At bounds'];
-  return `<div class="table-wrap"><table><caption>${escapeHtml(title)}</caption><thead><tr><th scope="col">Policy</th>${headings.map((heading) => `<th scope="col">${escapeHtml(heading)}</th>`).join('')}</tr></thead><tbody><tr><th scope="row">Optimized</th>${summaryCells(optimized)}</tr><tr><th scope="row">Counterpart</th>${summaryCells(counterpart)}</tr></tbody></table></div>`;
+  return tableWrap(`<table><caption>${escapeHtml(title)}</caption><thead><tr><th scope="col">Policy</th>${headings.map((heading) => `<th scope="col">${escapeHtml(heading)}</th>`).join('')}</tr></thead><tbody><tr><th scope="row">Optimized</th>${summaryCells(optimized)}</tr><tr><th scope="row">Counterpart</th>${summaryCells(counterpart)}</tr></tbody></table>`);
+}
+
+function tableWrap(table: string): string {
+  return `<div class="table-wrap"><p class="scroll-cue">Evidence table: scroll horizontally on narrow screens; the first column stays visible.</p>${table}</div>`;
+}
+
+function counterpartLabel(spec: FrontierResult['counterpartPolicy']): string {
+  if (spec.kind === 'fixed') return `fixed · ${percent(spec.equity)} equity · ${money(spec.spending)}/month`;
+  return `guardrail · ${percent(spec.equity)} equity · cut ${percent(spec.cutTrigger)} · restore ${percent(spec.restoreTrigger)} · adjust ${percent(spec.adjustmentSize)}`;
 }
 
 function ci(value: { estimate: number; lower: number; upper: number }, isMoney = false): string {
@@ -54,11 +63,8 @@ function ci(value: { estimate: number; lower: number; upper: number }, isMoney =
   return `${format(value.estimate)} [${format(value.lower)}, ${format(value.upper)}]`;
 }
 
-function chart(family: PolicyFamily, frontiers: readonly FrontierResult[], wealth: readonly number[]): string {
-  const points = wealth.map((amount, index) => {
-    const frontier = frontiers.find((item) => item.startingWealth === amount) ?? frontiers[index];
-    const optimized = frontier?.foldResults[0]?.validation.optimized.meanFundedLifetimeSpending ?? 0;
-    const counterpart = frontier?.foldResults[0]?.validation.counterpart.meanFundedLifetimeSpending ?? 0;
+/*
+
     const x = 42 + index * 128;
     const scale = (value: number) => 132 - Math.min(104, Math.max(0, value / 1_500_000 * 104));
     return `<g><line x1="${x}" y1="24" x2="${x}" y2="142" stroke="#d7dce2"/><circle cx="${x - 7}" cy="${scale(optimized)}" r="4" fill="#0b5cff"><title>${escapeHtml(money(optimized))} optimized</title></circle><circle cx="${x + 7}" cy="${scale(counterpart)}" r="4" fill="#b42318"><title>${escapeHtml(money(counterpart))} counterpart</title></circle><text x="${x}" y="160" text-anchor="middle">${escapeHtml(money(amount))}</text></g>`;
@@ -66,20 +72,25 @@ function chart(family: PolicyFamily, frontiers: readonly FrontierResult[], wealt
   return `<figure class="chart"><figcaption>${escapeHtml(family === 'freedom' ? 'Mathematical freedom' : 'Implementable policy')} · held-out funded spending by starting wealth</figcaption><svg viewBox="0 0 430 180" role="img" aria-label="${escapeHtml(family)} held-out funded spending chart"><line x1="20" y1="142" x2="414" y2="142" stroke="#111827"/><line x1="20" y1="24" x2="20" y2="142" stroke="#111827"/><text x="24" y="18">higher funded spending ↑</text>${points}<text x="25" y="176" fill="#4b5563">blue optimized · red counterpart</text></svg></figure>`;
 }
 
+*/
 function selectedChart(family: PolicyFamily, frontiers: readonly FrontierResult[], wealth: readonly number[]): string {
   const selected = wealth.map((amount) => [...frontiers.filter((item) => item.startingWealth === amount)].sort((left, right) => Number(right.verdict === 'pass') - Number(left.verdict === 'pass') || left.rho - right.rho)[0] ?? frontiers[0]);
   const values = selected.flatMap((frontier) => frontier?.foldResults.flatMap((fold) => [fold.validation.optimized.meanFundedLifetimeSpending, fold.validation.counterpart.meanFundedLifetimeSpending]) ?? []);
-  const minimum = Math.min(...values, 0);
-  const maximum = Math.max(...values, 1);
-  const range = Math.max(1, maximum - minimum);
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const observedRange = Math.max(1, maximum - minimum);
+  const padding = Math.max(1, observedRange * 0.08);
+  const domainMinimum = minimum - padding;
+  const domainMaximum = maximum + padding;
+  const range = domainMaximum - domainMinimum;
   const points = selected.map((frontier, index) => {
     const optimized = (frontier?.foldResults.reduce((sum, fold) => sum + fold.validation.optimized.meanFundedLifetimeSpending, 0) ?? 0) / (frontier?.foldResults.length || 1);
     const counterpart = (frontier?.foldResults.reduce((sum, fold) => sum + fold.validation.counterpart.meanFundedLifetimeSpending, 0) ?? 0) / (frontier?.foldResults.length || 1);
     const x = 42 + index * 128;
-    const scale = (value: number) => 132 - ((value - minimum) / range) * 104;
+    const scale = (value: number) => 132 - ((value - domainMinimum) / range) * 104;
     return `<g><line x1="${x}" y1="24" x2="${x}" y2="142" stroke="#d7dce2"/><circle cx="${x - 8}" cy="${scale(optimized)}" r="6" fill="#0b5cff"><title>${escapeHtml(money(optimized))} optimized</title></circle><circle cx="${x + 8}" cy="${scale(counterpart)}" r="6" fill="#b42318"><title>${escapeHtml(money(counterpart))} counterpart</title></circle><text x="${x}" y="160" text-anchor="middle">${escapeHtml(money(wealth[index]))}</text></g>`;
   }).join('');
-  return `<figure class="chart"><figcaption>${escapeHtml(family === 'freedom' ? 'Mathematical freedom' : 'Implementable policy')} - selected held-out funded spending by starting wealth</figcaption><p class="chart-range">actual funded-spending range: ${escapeHtml(money(minimum))}-${escapeHtml(money(maximum))}</p><svg viewBox="0 0 430 190" role="img" aria-label="${escapeHtml(family)} selected held-out funded spending chart"><line x1="20" y1="142" x2="414" y2="142" stroke="#111827"/><line x1="20" y1="24" x2="20" y2="142" stroke="#111827"/><text x="24" y="18">higher funded spending</text>${points}<g class="legend"><circle cx="30" cy="177" r="6" fill="#0b5cff"/><text x="42" y="181">optimized</text><circle cx="116" cy="177" r="6" fill="#b42318"/><text x="128" y="181">counterpart</text></g></svg></figure>`;
+  return `<figure class="chart"><figcaption>${escapeHtml(family === 'freedom' ? 'Mathematical freedom' : 'Implementable policy')} - selected held-out funded spending by starting wealth</figcaption><p class="chart-range">actual observed funded-spending range: ${escapeHtml(money(minimum))}-${escapeHtml(money(maximum))}; chart domain padded by 8%</p><svg viewBox="0 0 430 190" role="img" aria-label="${escapeHtml(family)} selected held-out funded spending chart"><line x1="20" y1="142" x2="414" y2="142" stroke="#111827"/><line x1="20" y1="24" x2="20" y2="142" stroke="#111827"/><text x="24" y="18">higher funded spending</text>${points}<g class="legend"><circle cx="30" cy="177" r="6" fill="#0b5cff"/><text x="42" y="181">optimized</text><circle cx="116" cy="177" r="6" fill="#b42318"/><text x="128" y="181">counterpart</text></g></svg></figure>`;
 }
 
 function frontierTables(frontiers: readonly FrontierResult[]): string {
@@ -93,11 +104,19 @@ function emptySummary(): OutcomeSummary {
   return { pathCount: 0, meanFundedLifetimeSpending: 0, medianFundedLifetimeSpending: 0, p10FundedLifetimeSpending: 0, floorBreachProbability: 0, severeTailShortfall: 0, meanTerminalWealth: 0, medianTerminalWealth: 0, meanFailureMonth: null, meanYearsAtFloor: 0, meanSpendingAdjustments: 0, meanEquityExposure: 0, meanTurnover: 0, meanTimeAtAllocationBounds: 0 };
 }
 
+function frontierTablesCompact(frontiers: readonly FrontierResult[]): string {
+  return frontiers.map((frontier) => {
+    const rows = frontier.foldResults.map((fold) => `<tr><th scope="row">${escapeHtml(fold.fold)}</th><td>${escapeHtml(money(fold.validation.optimized.meanFundedLifetimeSpending))}</td><td>${escapeHtml(money(fold.validation.counterpart.meanFundedLifetimeSpending))}</td><td>${escapeHtml(percent(fold.validation.optimized.floorBreachProbability))}</td><td>${escapeHtml(percent(fold.validation.counterpart.floorBreachProbability))}</td><td>${escapeHtml(ci(fold.validation.paired.fundedSpendingGain))}</td><td>${escapeHtml(ci(fold.validation.paired.breachProbabilityDifference))}</td></tr>`).join('');
+    return `<section class="panel"><h3>${escapeHtml(frontier.family)} · ${escapeHtml(money(frontier.startingWealth))} · rho ${escapeHtml(money(frontier.rho))}</h3><p class="verdict verdict-${escapeHtml(frontier.verdict)}">Verdict: <strong>${escapeHtml(frontier.verdict)}</strong></p><p class="policy-value">Selected policy: ${escapeHtml(frontier.optimizedPolicy.identity)}; counterpart: ${escapeHtml(counterpartLabel(frontier.counterpartPolicy))}</p>${tableWrap(`<table><caption>Held-out fold results and paired intervals</caption><thead><tr><th scope="col">Fold</th><th scope="col">Optimized funded</th><th scope="col">Counterpart funded</th><th scope="col">Optimized breach</th><th scope="col">Counterpart breach</th><th scope="col">Spending gain CI</th><th scope="col">Breach difference CI</th></tr></thead><tbody>${rows}</tbody></table>`)}${summaryTable('Training summaries', frontier.foldResults[0]?.train.optimized ?? emptySummary(), frontier.foldResults[0]?.train.counterpart ?? emptySummary())}</section>`;
+  }).join('');
+}
+
 export function renderBenchmarkHtml(report: BenchmarkReport): string {
   const freedom = report.frontiers.filter((frontier) => frontier.family === 'freedom');
   const implementable = report.frontiers.filter((frontier) => frontier.family === 'implementable');
   const uniqueWealth = [...new Set(report.frontiers.map((frontier) => frontier.startingWealth))];
-  const actionRows = report.frontiers.slice(0, 2).flatMap((frontier) => frontier.learnedActionMap.slice(0, 18).map((entry) => `<tr><th scope="row">${escapeHtml(frontier.family)}</th><td>${escapeHtml(entry.year)}</td><td>${escapeHtml(entry.breached ? 'yes' : 'no')}</td><td>${escapeHtml(percent(entry.action.equity))}</td><td>${escapeHtml(money(entry.action.spending))}</td></tr>`)).join('');
+  const mapFrontiers = (['freedom', 'implementable'] as const).map((family) => report.frontiers.find((frontier) => frontier.family === family)).filter((frontier): frontier is FrontierResult => Boolean(frontier));
+  const actionRows = mapFrontiers.flatMap((frontier) => frontier.learnedActionMap.slice(0, 18).map((entry) => `<tr><th scope="row">${escapeHtml(entry.family)}</th><td>${escapeHtml(entry.fold)}</td><td>${escapeHtml(fixed(entry.rho))}</td><td>${escapeHtml(entry.year)}</td><td>${escapeHtml(money(entry.wealth))}</td><td>${escapeHtml(money(entry.priorSpending))}</td><td>${escapeHtml(entry.breached ? 'yes' : 'no')}</td><td>${escapeHtml(percent(entry.equityAction))}</td><td>${escapeHtml(money(entry.spendingAction))}</td></tr>`)).join('');
   const limitations = report.limitations.map((limitation) => `<li>${escapeHtml(limitation)}</li>`).join('');
   return `<!doctype html>
 <html lang="en">
@@ -112,15 +131,16 @@ export function renderBenchmarkHtml(report: BenchmarkReport): string {
 <style>
 .scroll-cue{margin:0 0 6px;color:var(--muted);font-family:"IBM Plex Mono",Consolas,monospace;font-size:.72rem}.table-wrap th:first-child{position:sticky;left:0;background:var(--panel);z-index:1}.panel+.panel{margin-top:24px}.chart svg{font-size:12px}.chart-range{margin:0 0 6px;color:var(--muted);font-family:"IBM Plex Mono",Consolas,monospace;font-size:.72rem}.legend text{font-size:12px}@media(max-width:760px){.chart svg{font-size:13px}.chart circle{r:7}.scroll-cue{display:block}}
 </style>
+<style>.policy-value{overflow-wrap:anywhere;word-break:break-word;max-width:100%}@media(max-width:760px){main{overflow-x:hidden}}</style>
 </head>
 <body><main>
 <header><p class="meta">RESEARCH-ONLY · ${escapeHtml(report.mode.toUpperCase())}</p><h1>Policy optimization benchmark</h1><p class="lede">A cross-fit comparison of mathematical freedom and an implementable policy against fixed and guardrail counterparts. This instrument reports historical evidence; it does not give advice.</p><p class="note"><strong>${escapeHtml(report.previewBanner)}</strong> Preview estimates are intentionally not a verdict.</p></header>
 <section aria-labelledby="verdict-heading"><h2 id="verdict-heading">Verdicts first</h2><div class="verdicts"><article class="verdict-card"><h3>Mathematical freedom</h3><p class="verdict verdict-${escapeHtml(report.verdicts.mathematical)}"><strong>${escapeHtml(report.verdicts.mathematical)}</strong></p><p>Unconstrained annual spending and allocation grid.</p></article><article class="verdict-card"><h3>Implementable policy</h3><p class="verdict verdict-${escapeHtml(report.verdicts.implementable)}"><strong>${escapeHtml(report.verdicts.implementable)}</strong></p><p>30–80% equity and spending changes limited to 10% of prior spending.</p></article></div></section>
 <section aria-labelledby="charts-heading"><h2 id="charts-heading">Three-state frontier charts</h2><div class="charts">${selectedChart('freedom', freedom, uniqueWealth)}${selectedChart('implementable', implementable, uniqueWealth)}</div><p class="meta">Blue markers are optimized; red markers are the paired counterpart. Markers are evaluated points.</p></section>
-<section aria-labelledby="results-heading"><h2 id="results-heading">Held-out fold results and paired CIs</h2>${frontierTables(report.frontiers)}</section>
-<section aria-labelledby="action-heading"><h2 id="action-heading">Selected policies and learned state/action maps</h2><div class="table-wrap"><p class="scroll-cue">Evidence table: scroll horizontally on narrow screens; the first column stays visible.</p><table><caption>Learned state/action map sample</caption><thead><tr><th scope="col">Family</th><th scope="col">Year</th><th scope="col">Already breached</th><th scope="col">Equity</th><th scope="col">Monthly spending</th></tr></thead><tbody>${actionRows}</tbody></table></div><p>Adjustment burden is reported in each policy table as spending moves, equity exposure, turnover, and time at allocation bounds.</p></section>
+<section aria-labelledby="results-heading"><h2 id="results-heading">Held-out fold results and paired CIs</h2>${frontierTablesCompact(report.frontiers)}</section>
+<section aria-labelledby="action-heading"><h2 id="action-heading">Selected policies and learned state/action maps</h2>${tableWrap(`<table><caption>Learned state/action map sample</caption><thead><tr><th scope="col">Family</th><th scope="col">Fold</th><th scope="col">Rho</th><th scope="col">Year</th><th scope="col">Wealth</th><th scope="col">Prior spending</th><th scope="col">Already breached</th><th scope="col">Equity action</th><th scope="col">Monthly spending action</th></tr></thead><tbody>${actionRows}</tbody></table>`)}<p>Adjustment burden is reported in each policy table as spending moves, equity exposure, turnover, and time at allocation bounds.</p></section>
 <section aria-labelledby="method-heading"><h2 id="method-heading">Seeds, grids, input, and runtime</h2><div class="table-wrap"><table><caption>Reproducibility metadata</caption><tbody><tr><th scope="row">Input digest</th><td class="key">${escapeHtml(report.inputSha256)}</td></tr><tr><th scope="row">Git SHA</th><td class="key">${escapeHtml(report.gitSha)}</td></tr><tr><th scope="row">Runtime</th><td>${escapeHtml(report.runtimeMs)} ms</td></tr><tr><th scope="row">Training seeds</th><td class="data">${escapeHtml(report.seeds.training.join(', '))}</td></tr><tr><th scope="row">Validation seeds</th><td class="data">${escapeHtml(report.seeds.validation.join(', '))}</td></tr><tr><th scope="row">Bootstrap seed</th><td class="data">${escapeHtml(report.seeds.bootstrap)}</td></tr><tr><th scope="row">Spending grid</th><td class="data">${escapeHtml(report.grids.spending.join(', '))}</td></tr><tr><th scope="row">Freedom equity grid</th><td class="data">${escapeHtml(report.grids.freedomEquity.map(percent).join(', '))}</td></tr><tr><th scope="row">Implementable equity grid</th><td class="data">${escapeHtml(report.grids.implementableEquity.map(percent).join(', '))}</td></tr><tr><th scope="row">Wealth grid</th><td class="data">${escapeHtml(report.grids.wealth.length)} states, capped at $6,000,000</td></tr></tbody></table></div></section>
 <section aria-labelledby="limits-heading"><h2 id="limits-heading">Limitations</h2><ul>${limitations}</ul></section>
 <footer class="meta">Policy benchmark schema v${escapeHtml(report.schemaVersion)} · accessible tables are the source of numeric detail.</footer>
-</main></body></html>`;
+</main></body></html>`.replace('<div class="table-wrap"><table><caption>Reproducibility metadata', '<div class="table-wrap"><p class="scroll-cue">Evidence table: scroll horizontally on narrow screens; the first column stays visible.</p><table><caption>Reproducibility metadata');
 }
