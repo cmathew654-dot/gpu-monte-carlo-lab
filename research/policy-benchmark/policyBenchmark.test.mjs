@@ -3,12 +3,20 @@ import test from 'node:test';
 
 import historical from '../../src/data/historicalReturns.json';
 import {
+  FULL_CONFIG,
   PREVIEW_CONFIG,
+  aggregateVerdicts,
   annualAffineTransition,
   assessVerdict,
   buildAnnualBlocks,
+  interpolateValue,
+  pairedBootstrapMetrics,
+  solveDynamicPolicy,
+  summarizeOutcomes,
+  allocationBound,
   getPolicyActions,
   guardrailAction,
+  makeCommonBlockStarts,
   recoverHistoricalSeries,
   runBenchmark,
 } from './benchmark.ts';
@@ -20,6 +28,7 @@ test('recovers the paired history and keeps cross-fit eras disjoint', () => {
   assert.equal(series.dates[0], '1926-01');
   assert.equal(series.dates.at(-1), '2026-06');
   assert.match(series.inputSha256, /^[0-9a-f]{64}$/);
+  assert.equal(series.inputSha256, '22cce814073cdf5fba6288afbdf7d4c78d000a7f62110c757905eb3076cc49e4');
   assert.equal(series.trainingValidationOverlap.length, 0);
   assert.equal(series.folds[0].trainStart, '1926-01');
   assert.equal(series.folds[0].validationStart, '1976-01');
@@ -102,9 +111,19 @@ test('benchmark output is deterministic apart from runtime and renders an access
   assert.match(html, /Implementable policy/);
   assert.match(html, /<svg/);
   assert.match(html, /<table/);
+  assert.match(html, /scroll-cue/);
+  assert.match(html, /position:sticky/);
+  assert.match(html, /actual funded-spending range/);
   assert.match(html, /Limitations/);
   assert.doesNotMatch(html, /Inter/);
   assert.doesNotMatch(html, /<script[^>]+src=/i);
+  assert.ok(first.frontiers.every((frontier) => frontier.selectedByFold.length === 2));
+  assert.ok(first.frontiers.every((frontier) => frontier.counterpartEnvelope.length > 0));
+  assert.ok(first.frontiers.every((frontier) => frontier.selectedByFold.every((selection) => selection.counterpartEnvelope.some((point) => point.pointRiskMatched))));
+  assert.ok(first.frontiers.every((frontier) => frontier.learnedActionMap.length > 0));
+  assert.ok(first.frontiers.filter((frontier) => frontier.family === 'implementable').every((frontier) => frontier.feasibleActions.every((action) => action.spending >= 4_500)));
+  const validationChanged = runBenchmark({ ...config, validationSeeds: [51011, 51012] });
+  assert.deepEqual(first.frontiers.map((frontier) => frontier.optimizedPolicy), validationChanged.frontiers.map((frontier) => frontier.optimizedPolicy));
 });
 
 test('annual blocks stay paired and keep twelve months per training block', () => {
@@ -115,4 +134,69 @@ test('annual blocks stay paired and keep twelve months per training block', () =
   assert.equal(blocks[0].bond.length, 12);
   assert.equal(blocks[0].startDate, '1926-01');
   assert.equal(blocks.at(-1).startDate, '1975-01');
+});
+
+test('Bellman interpolation is exact and the breach penalty is absorbing', () => {
+  assert.equal(interpolateValue(new Float64Array([0, 100]), 50, [0, 100]), 50);
+  const cell = {
+    startDate: 'synthetic',
+    equity: Array.from({ length: 12 }, () => -0.2),
+    bond: Array.from({ length: 12 }, () => 0),
+    annualEquityReturn: -0.2,
+    annualBondReturn: 0,
+    equityDrawdown: -0.2,
+    cell: '0:0',
+    weight: 1,
+  };
+  const config = { ...PREVIEW_CONFIG, horizonYears: 2, wealthGrid: [0, 100_000], spendingGrid: [4_000], startingWealth: [50_000], representatives: 1, penalties: [0] };
+  const solved = solveDynamicPolicy('freedom', [cell], config, 10_000);
+  assert.equal(solved.penaltyModel, 'absorbing-any-breach');
+  assert.ok(solved.firstBreachPenaltyApplications > 0);
+  assert.ok(solved.repeatedBreachPenaltyApplications === 0);
+});
+
+test('paired bootstrap uses aggregate ratios and recomputes severe-tail summaries', () => {
+  const outcome = (fundedLifetimeSpending, unpaidFloorObligations, floorBreach = false) => ({ fundedLifetimeSpending, unpaidFloorObligations, floorBreach, terminalWealth: 0, failureMonth: null, yearsAtFloor: 0, spendingAdjustments: 0, equityExposure: 0, turnover: 0, timeAtAllocationBounds: 0 });
+  const optimized = [outcome(200, 0), outcome(300, 0)];
+  const counterpart = [outcome(100, 0), outcome(200, 0)];
+  const result = pairedBootstrapMetrics(optimized, counterpart, { resamples: 0, seed: 1 });
+  assert.equal(result.fundedSpendingGain.estimate, (250 - 150) / 150);
+  assert.notEqual(result.fundedSpendingGain.estimate, (1 + 0.5) / 2);
+  const tail = pairedBootstrapMetrics(
+    [outcome(100, 0), outcome(100, 100), outcome(100, 300), outcome(100, 500)],
+    [outcome(100, 0), outcome(100, 200), outcome(100, 400), outcome(100, 600)],
+    { resamples: 0, seed: 1 },
+  );
+  assert.equal(tail.tailShortfallReduction.estimate, (600 - 500) / 600);
+});
+
+test('full configuration is locked and common-random matrices are identical for paired policies', () => {
+  assert.equal(FULL_CONFIG.horizonYears, 35);
+  assert.equal(FULL_CONFIG.trainingPaths, 20_000);
+  assert.equal(FULL_CONFIG.validationPaths, 50_000);
+  assert.equal(FULL_CONFIG.representatives, 24);
+  assert.deepEqual(FULL_CONFIG.penalties, [0, 125_000, 250_000, 500_000, 1_000_000, 2_000_000, 4_000_000, 8_000_000]);
+  assert.deepEqual(makeCommonBlockStarts(3, 4, 10, 61001), makeCommonBlockStarts(3, 4, 10, 61001));
+});
+
+test('production aggregation considers every rho and allocation bounds are family-specific', () => {
+  const item = (rho, verdict) => ({ family: 'freedom', rho, startingWealth: 1_000_000, verdict });
+  assert.equal(aggregateVerdicts([item(0, 'stop'), item(1_000_000, 'pass'), { ...item(1_000_000, 'pass'), startingWealth: 1_200_000 }, item(2_000_000, 'stop')], 'full'), 'pass');
+  assert.equal(allocationBound('freedom', 0), true);
+  assert.equal(allocationBound('freedom', 0.3), false);
+  assert.equal(allocationBound('implementable', 0.3), true);
+  assert.equal(allocationBound('implementable', 0), false);
+  const summary = summarizeOutcomes([{
+    fundedLifetimeSpending: 100,
+    unpaidFloorObligations: 100,
+    floorBreach: true,
+    terminalWealth: 0,
+    failureMonth: 1,
+    yearsAtFloor: 1,
+    spendingAdjustments: 0,
+    equityExposure: 0.3,
+    turnover: 0,
+    timeAtAllocationBounds: 1,
+  }]);
+  assert.equal(summary.meanYearsAtFloor, 1);
 });
