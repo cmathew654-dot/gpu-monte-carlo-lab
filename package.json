@@ -20,7 +20,10 @@
     "test:probe-launcher": "node probe/launcherPaths.test.mjs",
     "test:compute-probe": "node probe/computeProbeCheck.test.mjs && node probe/run-compute-probe.mjs",
     "test:triangulation": "esbuild src/sim/model/triangulation.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/triangulation.test.bundle.mjs && node node_modules/.tmp/triangulation.test.bundle.mjs && esbuild src/store/triStats.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/triStats.test.bundle.mjs && node node_modules/.tmp/triStats.test.bundle.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:policy-benchmark": "esbuild research/policy-benchmark/policyBenchmark.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/policy-benchmark.test.bundle.mjs && node node_modules/.tmp/policy-benchmark.test.bundle.mjs",
+    "benchmark:policy": "esbuild research/policy-benchmark/run.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/policy-benchmark.run.mjs && node node_modules/.tmp/policy-benchmark.run.mjs",
+    "preview:policy-benchmark": "npm run benchmark:policy -- --preview"
   },
   "dependencies": {
     "@react-three/fiber": "^9.6.1",
