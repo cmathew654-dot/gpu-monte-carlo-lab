@@ -14,17 +14,17 @@ struct NodeBuffer_991Struct {
 @binding( 1 ) @group( 1 )
 var<storage, read> NodeBuffer_991 : NodeBuffer_991Struct;
 
-struct NodeBuffer_998Struct {
+struct NodeBuffer_997Struct {
 	value : array< u32 >
 };
 @binding( 2 ) @group( 1 )
-var<storage, read> NodeBuffer_998 : NodeBuffer_998Struct;
+var<storage, read> NodeBuffer_997 : NodeBuffer_997Struct;
 
-struct NodeBuffer_996Struct {
+struct NodeBuffer_995Struct {
 	value : array< u32 >
 };
 @binding( 3 ) @group( 1 )
-var<storage, read> NodeBuffer_996 : NodeBuffer_996Struct;
+var<storage, read> NodeBuffer_995 : NodeBuffer_995Struct;
 
 struct NodeBuffer_992Struct {
 	value : array< f32 >
@@ -32,17 +32,17 @@ struct NodeBuffer_992Struct {
 @binding( 4 ) @group( 1 )
 var<storage, read> NodeBuffer_992 : NodeBuffer_992Struct;
 
-struct NodeBuffer_995Struct {
-	value : array< f32 >
-};
-@binding( 5 ) @group( 1 )
-var<storage, read> NodeBuffer_995 : NodeBuffer_995Struct;
-
 struct NodeBuffer_994Struct {
 	value : array< f32 >
 };
-@binding( 6 ) @group( 1 )
+@binding( 5 ) @group( 1 )
 var<storage, read> NodeBuffer_994 : NodeBuffer_994Struct;
+
+struct NodeBuffer_993Struct {
+	value : array< f32 >
+};
+@binding( 6 ) @group( 1 )
+var<storage, read> NodeBuffer_993 : NodeBuffer_993Struct;
 
 struct objectStruct {
 	nodeUniform2 : u32,
@@ -109,9 +109,9 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 	nodeVar2 = ( nodeVar0 / nodeVar1 );
 	nodeVar4 = ( ( nodeVar0 - ( nodeVar2 * nodeVar1 ) ) + ( vertexIndex - ( nodeVar0 * 2u ) ) );
 
-	if ( ( nodeVar4 > NodeBuffer_996.value[ nodeVar2 ] ) ) {
+	if ( ( nodeVar4 > NodeBuffer_995.value[ nodeVar2 ] ) ) {
 
-		nodeVar3 = f32( NodeBuffer_996.value[ nodeVar2 ] );
+		nodeVar3 = f32( NodeBuffer_995.value[ nodeVar2 ] );
 
 	} else {
 
@@ -121,13 +121,13 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 
 	nodeVar5 = clamp( ( nodeVar3 / ( f32( object.nodeUniform2 ) - 1.0 ) ), 0.0, 1.0 );
 	nodeVar6 = ( nodeVar5 * 31.0 );
-	nodeVar7 = ( ( ( NodeBuffer_998.value[ nodeVar2 ] * 32u ) + u32( min( nodeVar6, 30.0 ) ) ) * 3u );
+	nodeVar7 = ( ( ( NodeBuffer_997.value[ nodeVar2 ] * 32u ) + u32( min( nodeVar6, 30.0 ) ) ) * 3u );
 	nodeVar8 = ( nodeVar7 + 3u );
 	nodeVar9 = ( nodeVar6 - f32( u32( min( nodeVar6, 30.0 ) ) ) );
 
-	if ( ( nodeVar4 > NodeBuffer_996.value[ nodeVar2 ] ) ) {
+	if ( ( nodeVar4 > NodeBuffer_995.value[ nodeVar2 ] ) ) {
 
-		nodeVar10 = NodeBuffer_996.value[ nodeVar2 ];
+		nodeVar10 = NodeBuffer_995.value[ nodeVar2 ];
 
 	} else {
 
@@ -135,7 +135,7 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 
 	}
 
-	positionLocal = ( mix( vec3<f32>( NodeBuffer_991.value[ nodeVar7 ], NodeBuffer_991.value[ ( nodeVar7 + 1u ) ], NodeBuffer_991.value[ ( nodeVar7 + 2u ) ] ), vec3<f32>( NodeBuffer_991.value[ nodeVar8 ], NodeBuffer_991.value[ ( nodeVar8 + 1u ) ], NodeBuffer_991.value[ ( nodeVar8 + 2u ) ] ), nodeVar9 ) + ( mix( vec3<f32>( NodeBuffer_992.value[ nodeVar7 ], NodeBuffer_992.value[ ( nodeVar7 + 1u ) ], NodeBuffer_992.value[ ( nodeVar7 + 2u ) ] ), vec3<f32>( NodeBuffer_992.value[ nodeVar8 ], NodeBuffer_992.value[ ( nodeVar8 + 1u ) ], NodeBuffer_992.value[ ( nodeVar8 + 2u ) ] ), nodeVar9 ) * vec3<f32>( ( 0.23 + clamp( ( ( ( log( max( NodeBuffer_995.value[ ( ( nodeVar2 * 32u ) + nodeVar10 ) ], 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_994.value[ nodeVar10 ] ) * 0.24 ), -0.04, 0.3 ) ) ) ) );
+	positionLocal = ( mix( vec3<f32>( NodeBuffer_991.value[ nodeVar7 ], NodeBuffer_991.value[ ( nodeVar7 + 1u ) ], NodeBuffer_991.value[ ( nodeVar7 + 2u ) ] ), vec3<f32>( NodeBuffer_991.value[ nodeVar8 ], NodeBuffer_991.value[ ( nodeVar8 + 1u ) ], NodeBuffer_991.value[ ( nodeVar8 + 2u ) ] ), nodeVar9 ) + ( mix( vec3<f32>( NodeBuffer_992.value[ nodeVar7 ], NodeBuffer_992.value[ ( nodeVar7 + 1u ) ], NodeBuffer_992.value[ ( nodeVar7 + 2u ) ] ), vec3<f32>( NodeBuffer_992.value[ nodeVar8 ], NodeBuffer_992.value[ ( nodeVar8 + 1u ) ], NodeBuffer_992.value[ ( nodeVar8 + 2u ) ] ), nodeVar9 ) * vec3<f32>( ( 0.23 + clamp( ( ( ( log( max( NodeBuffer_994.value[ ( ( nodeVar2 * 32u ) + nodeVar10 ) ], 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_993.value[ nodeVar10 ] ) * 0.24 ), -0.04, 0.3 ) ) ) ) );
 
 	if ( ( nodeVar2 == 1u ) ) {
 

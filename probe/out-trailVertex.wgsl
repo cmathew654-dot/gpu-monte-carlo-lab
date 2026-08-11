@@ -38,11 +38,11 @@ struct NodeBuffer_965Struct {
 @binding( 5 ) @group( 1 )
 var<storage, read> NodeBuffer_965 : NodeBuffer_965Struct;
 
-struct NodeBuffer_994Struct {
+struct NodeBuffer_993Struct {
 	value : array< f32 >
 };
 @binding( 6 ) @group( 1 )
-var<storage, read> NodeBuffer_994 : NodeBuffer_994Struct;
+var<storage, read> NodeBuffer_993 : NodeBuffer_993Struct;
 
 struct objectStruct {
 	nodeUniform1 : u32,
@@ -57,13 +57,14 @@ struct objectStruct {
 	nodeUniform15 : f32,
 	nodeUniform16 : f32,
 	nodeUniform17 : f32,
-	nodeUniform18 : f32,
-	nodeUniform21 : mat4x4<f32>
+	nodeUniform19 : f32,
+	nodeUniform22 : mat4x4<f32>
 };
 @binding( 0 ) @group( 1 )
 var<uniform> object : objectStruct;
 
 struct renderStruct {
+	nodeUniform18 : f32,
 	cameraProjectionMatrix : mat4x4<f32>,
 	cameraViewMatrix : mat4x4<f32>
 };
@@ -107,24 +108,29 @@ var<private> nodeVar24 : vec3<f32>;
 var<private> nodeVar25 : f32;
 var<private> nodeVar26 : vec3<f32>;
 var<private> nodeVar27 : f32;
-var<private> nodeVar28 : u32;
-var<private> nodeVar29 : f32;
+var<private> nodeVar28 : f32;
+var<private> nodeVar29 : u32;
 var<private> nodeVar30 : f32;
-var<private> nodeVar31 : u32;
+var<private> nodeVar31 : f32;
 var<private> nodeVar32 : u32;
 var<private> nodeVar33 : u32;
 var<private> nodeVar34 : u32;
-var<private> nodeVar35 : u32;
-var<private> nodeVar36 : vec3<f32>;
-var<private> nodeVar37 : bool;
-var<private> nodeVar38 : vec3<f32>;
+var<private> nodeVar35 : f32;
+var<private> nodeVar36 : f32;
+var<private> nodeVar37 : f32;
+var<private> nodeVar38 : f32;
 var<private> nodeVar39 : u32;
 var<private> nodeVar40 : u32;
-var<private> nodeVar41 : f32;
-var<private> nodeVar42 : f32;
-var<private> nodeVar43 : f32;
+var<private> nodeVar41 : vec3<f32>;
+var<private> nodeVar42 : bool;
+var<private> nodeVar43 : vec3<f32>;
+var<private> nodeVar44 : u32;
+var<private> nodeVar45 : u32;
+var<private> nodeVar46 : f32;
+var<private> nodeVar47 : f32;
+var<private> nodeVar48 : f32;
 var<private> modelViewMatrix : mat4x4<f32>;
-var<private> VERTEX_nodeVar45 : vec4<f32>;
+var<private> VERTEX_nodeVar50 : vec4<f32>;
 var<private> positionLocal : vec3<f32>;
 var<private> v_modelViewProjection : vec4<f32>;
 var<private> v_positionView : vec3<f32>;
@@ -231,106 +237,131 @@ fn main( @builtin( vertex_index ) vertexIndex : u32,
 
 	if ( nodeVar16 ) {
 
-		nodeVar28 = ( object.nodeUniform9 - 1u );
+		nodeVar29 = ( object.nodeUniform9 - 1u );
 
 	} else {
 
-		nodeVar28 = ( nodeVar9 * object.nodeUniform8 );
+		nodeVar29 = ( nodeVar9 * object.nodeUniform8 );
 
 	}
 
 
-	if ( ( nodeVar28 < object.nodeUniform11 ) ) {
+	if ( ( nodeVar29 < object.nodeUniform11 ) ) {
 
-		nodeVar27 = NodeBuffer_971.value[ ( ( nodeVar4 * 32u ) + nodeVar28 ) ];
+		nodeVar28 = NodeBuffer_971.value[ ( ( nodeVar4 * 32u ) + nodeVar29 ) ];
 
 	} else {
 
-		nodeVar27 = NodeBuffer_965.value[ nodeVar4 ];
+		nodeVar28 = NodeBuffer_965.value[ nodeVar4 ];
+
+	}
+
+	nodeVar30 = ( ( ( log( max( nodeVar28, 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_993.value[ nodeVar29 ] ) * 1.0 );
+
+	if ( ( nodeVar30 >= 0.0 ) ) {
+
+		nodeVar27 = ( 0.35 * tanh( ( nodeVar30 / 0.35 ) ) );
+
+	} else {
+
+		nodeVar27 = ( -0.06 * tanh( ( nodeVar30 / -0.06 ) ) );
+
+	}
+
+	nodeVar32 = ( nodeVar4 * 64u );
+	nodeVar33 = ( ( ( nodeVar32 + 888u ) * 747796405u ) + 2891336453u );
+	nodeVar34 = ( ( ( nodeVar33 >> ( ( nodeVar33 >> 28u ) + 4u ) ) ^ nodeVar33 ) * 277803737u );
+	nodeVar35 = ( f32( ( ( nodeVar34 >> 22u ) ^ nodeVar34 ) ) * 2.3283064365386963e-10 );
+
+	if ( ( fract( ( nodeVar35 * 61.17 ) ) > 0.97 ) ) {
+
+		nodeVar31 = 1.0;
+
+	} else {
+
+		nodeVar31 = 0.0;
+
+	}
+
+	nodeVar36 = ( smoothstep( 0.05, 0.18, nodeVar30 ) * nodeVar31 );
+
+	if ( nodeVar5 ) {
+
+		nodeVar37 = 0.15;
+
+	} else {
+
+		nodeVar37 = 0.0;
 
 	}
 
 
 	if ( nodeVar5 ) {
 
-		nodeVar29 = 0.15;
+		nodeVar38 = 0.0;
 
 	} else {
 
-		nodeVar29 = 0.0;
+		nodeVar39 = ( ( ( nodeVar32 + 999u ) * 747796405u ) + 2891336453u );
+		nodeVar40 = ( ( ( nodeVar39 >> ( ( nodeVar39 >> 28u ) + 4u ) ) ^ nodeVar39 ) * 277803737u );
+		nodeVar38 = ( ( ( nodeVar35 - 0.5 ) * 3.5 ) + ( sin( ( ( nodeVar19 * 12.566370614359172 ) + ( ( f32( ( ( nodeVar40 >> 22u ) ^ nodeVar40 ) ) * 2.3283064365386963e-10 ) * 6.283185307179586 ) ) ) * 0.5 ) );
 
 	}
 
+	positionLocal = ( ( mix( nodeVar22, nodeVar24, nodeVar25 ) + ( nodeVar26 * vec3<f32>( ( ( ( 0.1 + nodeVar27 ) + ( nodeVar36 * 0.08 ) ) + nodeVar37 ) ) ) ) + ( normalize( cross( ( nodeVar24 - nodeVar22 ), nodeVar26 ) ) * vec3<f32>( nodeVar38 ) ) );
+	nodeVar42 = ( nodeVar10 && ( nodeVar29 == nodeVar13 ) );
 
-	if ( nodeVar5 ) {
+	if ( ( nodeVar5 && ( ! nodeVar42 ) ) ) {
 
-		nodeVar30 = 0.0;
-
-	} else {
-
-		nodeVar31 = ( nodeVar4 * 64u );
-		nodeVar32 = ( ( ( nodeVar31 + 888u ) * 747796405u ) + 2891336453u );
-		nodeVar33 = ( ( ( nodeVar32 >> ( ( nodeVar32 >> 28u ) + 4u ) ) ^ nodeVar32 ) * 277803737u );
-		nodeVar34 = ( ( ( nodeVar31 + 999u ) * 747796405u ) + 2891336453u );
-		nodeVar35 = ( ( ( nodeVar34 >> ( ( nodeVar34 >> 28u ) + 4u ) ) ^ nodeVar34 ) * 277803737u );
-		nodeVar30 = ( ( ( ( f32( ( ( nodeVar33 >> 22u ) ^ nodeVar33 ) ) * 2.3283064365386963e-10 ) - 0.5 ) * 3.5 ) + ( sin( ( ( nodeVar19 * 12.566370614359172 ) + ( ( f32( ( ( nodeVar35 >> 22u ) ^ nodeVar35 ) ) * 2.3283064365386963e-10 ) * 6.283185307179586 ) ) ) * 0.5 ) );
-
-	}
-
-	positionLocal = ( ( mix( nodeVar22, nodeVar24, nodeVar25 ) + ( nodeVar26 * vec3<f32>( ( ( 0.1 + clamp( ( ( ( log( max( nodeVar27, 1.0 ) ) * 0.43429448190325176 ) - NodeBuffer_994.value[ nodeVar28 ] ) * 1.0 ), -0.06, 0.35 ) ) + nodeVar29 ) ) ) ) + ( normalize( cross( ( nodeVar24 - nodeVar22 ), nodeVar26 ) ) * vec3<f32>( nodeVar30 ) ) );
-	nodeVar37 = ( nodeVar10 && ( nodeVar28 == nodeVar13 ) );
-
-	if ( ( nodeVar5 && ( ! nodeVar37 ) ) ) {
-
-		nodeVar36 = vec3<f32>( 1.0, 0.71, 0.28 );
+		nodeVar41 = vec3<f32>( 1.0, 0.71, 0.28 );
 
 	} else {
 
 
-		if ( nodeVar37 ) {
+		if ( nodeVar42 ) {
 
-			nodeVar38 = ( vec3<f32>( 0.9646862478936612, 0.025186859622305935, 0.036889450395083165 ) * vec3<f32>( 0.6 ) );
+			nodeVar43 = ( vec3<f32>( 0.9646862478936612, 0.025186859622305935, 0.036889450395083165 ) * vec3<f32>( 0.6 ) );
 
 		} else {
 
-			nodeVar38 = mix( vec3<f32>( 0.02955683443236377, 0.21586050010324417, 1.0 ), vec3<f32>( 0.158960835050774, 0.4452011945063733, 1.0 ), 0.35 );
+			nodeVar43 = mix( mix( vec3<f32>( 0.02955683443236377, 0.21586050010324417, 1.0 ), vec3<f32>( 0.158960835050774, 0.4452011945063733, 1.0 ), 0.35 ), vec3<f32>( 1.0, 0.52, 0.06 ), smoothstep( 0.0, 0.4, nodeVar36 ) );
 
 		}
 
-		nodeVar36 = nodeVar38;
+		nodeVar41 = nodeVar43;
 
 	}
 
-	nodeVar39 = ( ( ( ( nodeVar4 * 64u ) + 505u ) * 747796405u ) + 2891336453u );
-	nodeVar40 = ( ( ( nodeVar39 >> ( ( nodeVar39 >> 28u ) + 4u ) ) ^ nodeVar39 ) * 277803737u );
-	nodeVar41 = ( ( nodeVar19 * 0.96 ) + ( ( f32( ( ( nodeVar40 >> 22u ) ^ nodeVar40 ) ) * 2.3283064365386963e-10 ) * 0.04 ) );
+	nodeVar44 = ( ( ( nodeVar32 + 505u ) * 747796405u ) + 2891336453u );
+	nodeVar45 = ( ( ( nodeVar44 >> ( ( nodeVar44 >> 28u ) + 4u ) ) ^ nodeVar44 ) * 277803737u );
+	nodeVar46 = ( ( nodeVar19 * 0.96 ) + ( ( f32( ( ( nodeVar45 >> 22u ) ^ nodeVar45 ) ) * 2.3283064365386963e-10 ) * 0.04 ) );
 
 	if ( ( nodeVar11 > 0u ) ) {
 
-		nodeVar42 = 1.0;
+		nodeVar47 = 1.0;
 
 	} else {
 
-		nodeVar42 = 0.0;
+		nodeVar47 = 0.0;
 
 	}
 
 
 	if ( nodeVar5 ) {
 
-		nodeVar43 = 5.0;
+		nodeVar48 = 5.0;
 
 	} else {
 
-		nodeVar43 = 1.0;
+		nodeVar48 = 1.0;
 
 	}
 
-	varyings.nodeVarying3 = vec4<f32>( nodeVar36, ( ( ( ( ( 0.045 * smoothstep( nodeVar41, ( nodeVar41 + 0.02 ), object.nodeUniform15 ) ) * ( 1.0 - ( smoothstep( object.nodeUniform16, ( object.nodeUniform16 + 0.012 ), nodeVar19 ) * 0.88 ) ) ) * object.nodeUniform17 ) * nodeVar42 ) * nodeVar43 ) );
-	modelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform21 );
+	varyings.nodeVarying3 = vec4<f32>( nodeVar41, ( ( ( ( ( ( ( 0.08 * smoothstep( nodeVar46, ( nodeVar46 + 0.02 ), object.nodeUniform15 ) ) * ( 1.0 - ( smoothstep( object.nodeUniform16, ( object.nodeUniform16 + 0.012 ), nodeVar19 ) * 0.88 ) ) ) * object.nodeUniform17 ) * ( ( 1.0 + ( smoothstep( 0.1, 0.3, nodeVar30 ) * 0.5 ) ) + ( ( nodeVar36 * 20.0 ) * ( ( sin( ( ( render.nodeUniform18 * 1.5 ) + ( nodeVar35 * 6.283185307179586 ) ) ) * 0.4 ) + 0.6 ) ) ) ) * mix( ( 1.0 - ( smoothstep( 0.78, 1.0, nodeVar19 ) * 0.85 ) ), 1.0, nodeVar36 ) ) * nodeVar47 ) * nodeVar48 ) );
+	modelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform22 );
 	v_positionView = ( modelViewMatrix * vec4<f32>( positionLocal, 1.0 ) ).xyz;
-	VERTEX_nodeVar45 = ( render.cameraProjectionMatrix * vec4<f32>( v_positionView, 1.0 ) );
-	VERTEX_v_modelViewProjection = VERTEX_nodeVar45;
+	VERTEX_nodeVar50 = ( render.cameraProjectionMatrix * vec4<f32>( v_positionView, 1.0 ) );
+	VERTEX_v_modelViewProjection = VERTEX_nodeVar50;
 
 	// result
 

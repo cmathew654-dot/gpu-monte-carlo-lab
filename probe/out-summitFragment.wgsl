@@ -38,7 +38,7 @@ fn main( @location( 0 ) nodeVarying4 : vec2<f32> ) -> OutputStruct {
 	// flow
 	// code
 
-	DiffuseColor = vec4<f32>( vec3<f32>( 0.8879231178794776, 0.9301108583738498, 1.0 ), ( ( 0.85 * ( ( smoothstep( 0.96, 1.0, object.nodeUniform0 ) * 0.6 ) + 0.4 ) ) * ( 1.0 - smoothstep( 0.18, 0.42, length( ( nodeVarying4 - vec2<f32>( 0.5 ) ) ) ) ) ) );
+	DiffuseColor = vec4<f32>( vec3<f32>( 0.8879231178794776, 0.9301108583738498, 1.0 ), ( ( 0.45 * ( ( smoothstep( 0.96, 1.0, object.nodeUniform0 ) * 0.6 ) + 0.4 ) ) * ( 1.0 - smoothstep( 0.18, 0.42, length( ( nodeVarying4 - vec2<f32>( 0.5 ) ) ) ) ) ) );
 	DiffuseColor.w = ( DiffuseColor.w * object.nodeUniform1 );
 	nodeVar0 = max( vec4<f32>( DiffuseColor.xyz, DiffuseColor.w ), vec4<f32>( 0.0 ) );
 	Output = nodeVar0;
