@@ -9,7 +9,7 @@
 
 *This walkthrough shows CPU mode. Open the [live demo](https://cmathew654-dot.github.io/gpu-monte-carlo-lab/) in a WebGPU browser for the 3D client view and 100× more scenarios.*
 
-I built GPU Monte Carlo Lab to compare retirement plans across simulation assumptions. Clients get one plain-language result, while advisors can see how it changes across models and historical cohorts, including when a plan runs out of money and the size of the shortfall.
+GPU Monte Carlo Lab compares retirement plans across simulation assumptions. Advisors can compare model results, replay historical cohorts, and inspect when failed plans run out of money and the size of the shortfall. The client view reduces the same analysis to one plain-language result.
 
 ## The 60-second read
 
