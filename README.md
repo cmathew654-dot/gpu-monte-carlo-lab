@@ -128,19 +128,14 @@ criteria, and limitations.
 
 ## Validation
 
-Run the validation commands:
+Run the deterministic local and CI gate:
 
 ```bash
-npm run test:sim
-npm run test:stats
-npm run test:triangulation
-npm run test:gauntlet
-npm run test:regime
-npm run test:frontier
-npm run test:frontier-validate
-npm run test:validate
-npm run test:compute-probe
+npm run check
 ```
+
+`npm run check` deliberately excludes `npm run test:compute-probe`, a manual
+hardware-dependent check.
 
 - Same seed and parameters produce byte-identical results; the 10,000-path run
   is an exact subset of the 100,000-path run.
@@ -195,15 +190,17 @@ fallback engine.
 
 ## Run it
 
+Use Node.js 22.
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Open in a WebGPU-capable browser (Chrome/Edge or Safari 26+) for the full 3D
 view. Other browsers use the CPU fallback engine. Use
-`npm run build` for a production bundle and the commands above for focused
-verification.
+`npm run check` as the deterministic local/CI gate; `npm run build` creates a
+production bundle.
 
 ## Repo map
 

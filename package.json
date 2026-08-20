@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check": "npm run lint && npm run test:framing && npm run test:sim && npm run test:gauntlet && npm run test:stats && npm run test:validate && npm run test:frontier && npm run test:frontier-validate && npm run test:regime && npm run test:probe-launcher && npm run test:triangulation && npm run build",
     "test:framing": "esbuild src/scene/cameraFit.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/cameraFit.test.bundle.mjs && node node_modules/.tmp/cameraFit.test.bundle.mjs",
     "test:sim": "esbuild src/validation/cpuSim.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/cpuSim.test.bundle.mjs && node node_modules/.tmp/cpuSim.test.bundle.mjs",
     "test:gauntlet": "esbuild src/sim/gauntlet/gauntlet.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/gauntlet.test.bundle.mjs && node node_modules/.tmp/gauntlet.test.bundle.mjs && esbuild src/sim/gauntlet/gauntletViz.test.mjs --bundle --platform=node --format=esm --outfile=node_modules/.tmp/gauntletViz.test.bundle.mjs && node node_modules/.tmp/gauntletViz.test.bundle.mjs",
